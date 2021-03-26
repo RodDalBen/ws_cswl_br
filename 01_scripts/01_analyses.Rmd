@@ -1,0 +1,317 @@
+---
+title: "Data analyses: Word segmentation and cross-situational word learning in parallel with Brazilians"
+author: "Rodrigo Dal Ben"
+date: "25/03/2021"
+output: html_document
+---
+
+last update: 24/03/2021
+
+# Brackground ######### FIX HERE ADD DETAILS
+
+Data analyses for the study combining word segmentation (ws) and cross-situational word learning (cswl) in parallel. The study was performed with Brazilian adults (both in person and online). We also evaluate the effects of subtle phonotactic probabilities in this process.
+
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in pareallel. *Journal ...*
+
+**Doubts & suggestions:** <dalbenwork@gmail.com>
+
+# Load packages
+```{r load package}
+library(tidyverse)
+library(tidylog)
+library(boot)
+library(gmodels)
+library(lme4)
+library(brms)
+library(sjPlot)
+library(patchwork)
+library(janitor)
+library(RColorBrewer) 
+library(here)
+
+# avoid scientific notation
+options(scipen = 0)
+
+# color-blind palette
+cb_pal <- c("#E69F00", "#009E73", "#0072B2", "#D55E00", "#999999", "#000000") 
+```
+
+# Prepare data
+
+```{r load data}
+# load full data
+load(here("02_data/data_ws_cswl_br.rda"))
+
+# add unique column to identify the go/no-go tasks
+data_ws_cswl_br <- 
+  data_ws_cswl_br %>% 
+  mutate(speech_version_m = if_else(experiment == "Exp4-go/no-go", "L_conflict-go/no-go", speech_version))
+```
+
+## Remove inattentive/non-compliance
+
+For the **go/no-go condition** (online data collection) we remove participants who: (1) failed in at any of the 5 catch trials during training, or (2) failed at any of the 6 catch trials at word segmentation test, or (3) that reported using cellphone, or (5) that reported annotating during the task (against instructions). 
+
+```{r inattentive/non-compliance}
+# base data for inclusion lists
+base_inatt_nc <- 
+  data_ws_cswl_br %>% 
+  filter(experiment == "Exp4-go/no-go",
+         trial_type == "catch cellphone" | # 1 
+         trial_type == "catch annotation"| # 1
+         trial_type == "catch test ws"| # 6
+         trial_type == "catch training" # 5
+         ) %>% 
+  group_by(p_n_unique, trial_type) %>% 
+  mutate(    
+    is_correct = case_when(trial_type == "catch cellphone" & key_pressed == "n" ~ 1,
+                           trial_type == "catch cellphone" & key_pressed == "s" ~ 0,
+                           trial_type == "catch annotation" & key_pressed == "n" ~ 1,
+                           trial_type == "catch annotation" & key_pressed == "s" ~ 0,
+                           T ~ as.double(is_correct))
+  ) %>%
+  summarise(sum_is_correct = sum(is_correct, na.rm = T))
+
+# list of included participants, should be 13 to be included
+list_inatt_nc <- 
+  base_inatt_nc %>% 
+  group_by(p_n_unique) %>% 
+  summarise(sum_is_correct = sum(sum_is_correct, na.rm = T)) %>% 
+  filter(sum_is_correct != 13) %>% # remove 12 participants (27%); 33 remaining
+  select(p_n_unique)
+
+# exclusion reason
+base_inatt_nc %>% group_by(trial_type, sum_is_correct) %>% count() # 12 to be remove, match
+
+# exclude participants from dataset
+data_filtered_v1 <- 
+  data_ws_cswl_br %>% 
+  filter(!p_n_unique %in% list_inatt_nc$p_n_unique)
+
+# double check n by experiment and speech version
+data_filtered_v1 %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count() # 33 on go/no-go
+```
+
+## Remove outliers
+
+We remove test trials (both ws and cswl), for all conditions, with reaction time greater than 3 SDs. 
+
+```{r rt outliers}
+# calculate sd
+rt_3sd <-
+  data_filtered_v1 %>% 
+  group_by(speech_version_m, trial_type) %>% 
+  filter(trial_type == "test ws" | trial_type == "test cswl") %>% 
+  summarise(rt_3sd = 3*sd(rt, na.rm = T)) %>% 
+  unite("names", speech_version_m:trial_type, sep = "_") %>% 
+  spread(names, rt_3sd) # long to wide
+
+rt_3sd
+
+# visualize 3 SDs, facet by experiment/speech_version
+data_filtered_v1 %>% 
+  filter(trial_type == "test ws" | trial_type == "test cswl") %>% 
+  ggplot(aes(x = rt)) +
+  geom_histogram() +
+  facet_wrap(speech_version_m ~ trial_type)
+
+# remove outliers
+data_filtered_v2 <- 
+  data_filtered_v1 %>% 
+  mutate(include_trial = case_when(trial_type == "test ws" & speech_version_m == "L_aligned" & rt > rt_3sd$`L_aligned_test ws` ~ F,
+                                   trial_type == "test cswl" & speech_version_m == "L_aligned" & rt > rt_3sd$`L_aligned_test cswl` ~ F,
+                                   trial_type == "test ws" & speech_version_m == "L_balanced" & rt > rt_3sd$`L_balanced_test ws` ~ F,
+                                   trial_type == "test cswl" & speech_version_m == "L_balanced" & rt > rt_3sd$`L_balanced_test cswl` ~ F,
+                                   
+                                   trial_type == "test ws" & speech_version_m == "L_conflict" & rt > rt_3sd$`L_conflict_test ws` ~ F,
+                                   trial_type == "test cswl" & speech_version_m == "L_conflict" & rt > rt_3sd$`L_conflict_test cswl` ~ F,
+                                   trial_type == "test ws" & speech_version_m == "L_conflict-go/no-go" & 
+                                     rt > rt_3sd$`L_conflict-go/no-go_test ws` ~ F,
+                                   trial_type == "test cswl" & speech_version_m == "L_conflict-go/no-go" & 
+                                     rt > rt_3sd$`L_conflict-go/no-go_test cswl` ~ F,
+                                   T ~ T
+                                   )
+         )
+
+# summary of exclude trials by experiment/speech_version
+data_filtered_v2 %>% 
+  filter(trial_type == "test ws" | trial_type == "test cswl") %>% 
+  group_by(speech_version_m, include_trial, trial_type) %>% 
+  count() %>% 
+  spread(include_trial, n) %>% 
+  mutate(perc_excl = `FALSE`/`TRUE`)
+
+# exclude trials
+data_filtered_v2 <- data_filtered_v2 %>% 
+  filter(include_trial == T) %>% 
+  select(-include_trial) # 126 trials (2% overall)
+```
+
+# Demographics
+
+Sample size, gge (average, sd, range), and gender.
+
+```{r demographics}
+# demographics
+data_filtered_v2 %>% 
+  group_by(p_n_unique) %>% 
+  slice_head() %>%
+  ungroup() %>% 
+  group_by(speech_version_m) %>% 
+  mutate(tmp_gender = if_else(gender == "female", 1, 0)) %>%
+  summarise(n = n(), 
+            female = sum(tmp_gender), 
+            age_avg = mean(age, na.rm = T),
+            age_sd = sd(age, na.rm = T),
+            age_max = max(age, na.rm = T),
+            age_min = min(age, na.rm = T), 
+            )
+```
+
+# Visualizations
+
+* Mean performance on each task for each language;
+
+* Correlation between performance on ws and cswl;
+
+* Correlation between performance and self-evaluation;
+
+## Prepare data
+
+Summary data, 1 data point per participant. 
+
+```{r summary data plots}
+# summary data for performance plot
+data_summ_plot <- 
+  data_filtered_v2 %>% 
+  group_by(speech_version_m, p_n_unique, trial_type) %>%
+  filter(trial_type %in% c("self evaluation cswl", "self evaluation ws", "test ws", "test cswl")) %>% 
+  mutate(trial_type = factor(trial_type, levels = c("test ws", "test cswl", "self evaluation ws", "self evaluation cswl")),
+         resp = case_when(trial_type == "self evaluation ws" | trial_type == "self evaluation cswl" ~ as.integer(key_pressed), 
+                                    T ~ is_correct)) %>% 
+  summarise(avg_resp = mean(resp, na.rm = T))
+
+data_summ_plot
+
+# summary data for correlation plot
+data_summ_correlation <- 
+  data_summ_plot %>% 
+  group_by(speech_version_m, p_n_unique) %>% 
+  spread(trial_type, avg_resp)
+
+data_summ_correlation
+```
+
+## Plots
+
+Performance plots
+
+```{r performance plot}
+# performance plot
+data_summ_plot %>% 
+  filter(trial_type %in% c("test ws", "test cswl")) %>% 
+  ggplot(aes(x = speech_version_m, y = avg_resp, color = trial_type)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.5), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.5)) + # boot CIs
+  scale_color_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_x_discrete() +
+  annotate("segment", x = 0.75, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
+  annotate("segment", x = 1.75, xend = 2, y = 0.5, yend = 0.5, linetype = "dashed") + 
+  annotate("segment", x = 2.75, xend = 3, y = 0.5, yend = 0.5, linetype = "dashed") + 
+  annotate("segment", x = 3.75, xend = 4, y = 0.5, yend = 0.5, linetype = "dashed") + 
+  annotate("segment", x = 1, xend = 1.25, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
+  annotate("segment", x = 2, xend = 2.25, y = 0.25, yend = 0.25, linetype = "dashed") +
+  annotate("segment", x = 3, xend = 3.25, y = 0.25, yend = 0.25, linetype = "dashed") +
+  annotate("segment", x = 4, xend = 4.25, y = 0.25, yend = 0.25, linetype = "dashed") +
+  labs(y = "Proportion of correct selection", x = "Speech version") + 
+  theme_bw() +
+  theme(legend.title.align = 0.5)
+```
+
+Correlation plots
+
+```{r correlation plots}
+# segmentation and mapping
+data_summ_correlation %>% 
+  ggplot(aes(x = `test ws`, y = `test cswl`)) +#, color = speech_version_m)) +
+  geom_count(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
+  facet_wrap(~ speech_version_m) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_size_area() +
+  labs(x = "Proportion of corret segmentation", y = "Proportion of corret mapping") + 
+  theme_bw()
+
+# segmentation and self evaluation
+a <- 
+data_summ_correlation %>% 
+  ggplot(aes(x = `test ws`, y = `self evaluation ws`)) +#, color = speech_version_m)) +
+  geom_count(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
+  facet_wrap(~ speech_version_m) +
+  scale_size_area() +
+  labs(title = "Segmentation performance and self-evaluation", 
+       x = "Proportion of corret segmentation", 
+       y = "Self-evaluation") + 
+  theme_bw()
+
+# mapping and self evaluation
+b <- 
+data_summ_correlation %>% 
+  ggplot(aes(x = `test cswl`, y = `self evaluation cswl`)) +#, color = speech_version_m)) +
+  geom_count(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
+  facet_wrap(~ speech_version_m) +
+  scale_size_area() +
+  labs(title = "Mapping performance and self-evaluation", 
+       x = "Proportion of corret mapping", 
+       y = "Self-evaluation") + 
+  theme_bw()
+
+## joint self-evaluations
+a + b
+```
+
+# Statistics
+
+## Descriptive
+
+Mean correct & sd
+
+```{r descriptive}
+# descriptive - take it all with a grain of salt, the real stats is done with mixed models below
+data_summ_plot %>% 
+  group_by(speech_version_m, trial_type) %>% 
+  summarise(avg = mean(avg_resp, na.rm = T), 
+            sd = sd(avg_resp, na.rm = T),
+            ci_high = gmodels::ci(avg_resp)[3],
+            ci_low = gmodels::ci(avg_resp)[2],
+            d = (avg - 0.5)/sd
+            )
+```
+
+## Inferential
+
+
+
+
+
+consider running a repeated measures correlation: https://doi.org/10.3389/fpsyg.2017.00456 
+See options for graphing as well
+
+Correlation - sample code (from exp3_seg)
+```{r}
+# corr between ws and cswl (correct, rt)
+data_summary_corr_ws_cswl <- 
+  data_summary %>% 
+  select(id, trial_type, m_correct) %>% 
+  group_by(id) %>% 
+  spread(trial_type, m_correct)
+```
+
+
+### Frequentist
+### Bayesian
+# THE END
