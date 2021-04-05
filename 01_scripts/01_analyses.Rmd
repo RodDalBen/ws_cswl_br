@@ -5,13 +5,15 @@ date: "25/03/2021"
 output: html_document
 ---
 
-last update: 29/03/2021
+last update: 02/04/2021
 
 # Brackground ######### FIX HERE ADD DETAILS
 
-Data analyses for the study combining word segmentation (ws) and cross-situational word learning (cswl) in parallel. The study was performed with Brazilian adults (both in person and online). We also evaluate the effects of subtle phonotactic probabilities in this process.
+Data analyses for the study combining word segmentation (ws), cross-situational word learning (cswl), and phonotactics in parallel. The study was performed with Brazilian adults (both in person and online). For a full acount see the following reference.
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in pareallel. *Journal ...*
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in pareallel. *Journal ...* [*PsyArXiv preprint*](ADD)
+
+[**OSF project**](ADD)
 
 **Doubts & suggestions:** <dalbenwork@gmail.com>
 
@@ -99,8 +101,8 @@ inatt_study2 <-
   summarise(sum_is_correct = sum(is_correct, na.rm = T),
             sum_rt = sum(include_rt, na.rm = T)
             ) %>%
-  mutate(include_is_correct = case_when(trial_type == "catch test ws" & sum_is_correct == 6 ~ T, 
-                                        trial_type == "catch training" & sum_is_correct == 5 ~ T, 
+  mutate(include_is_correct = case_when(trial_type == "catch test ws" & sum_is_correct >= 5 ~ T, # 5 out of 6 
+                                        trial_type == "catch training" & sum_is_correct >= 4 ~ T, # 4 out of 5
                                         trial_type == "catch cellphone" & sum_is_correct == 1 ~ T, 
                                         trial_type == "catch annotation" & sum_is_correct == 1 ~ T,
                                         T ~ F),
@@ -127,7 +129,7 @@ inatt_participant <-
 # final list of excluded participants
 exclude_list <- 
   inatt_participant %>% 
-  filter(include_final == F) # 16 participants excluded (29 remaining)
+  filter(include_final == F) # 10 participants excluded (35 remaining)
   
 # exclude participants from dataset
 data_filtered_v1 <- 
@@ -135,7 +137,7 @@ data_filtered_v1 <-
   filter(!p_n_unique %in% exclude_list$p_n_unique)
 
 # double check n by experiment and speech version
-data_filtered_v1 %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count() # 33 on go/no-go
+data_filtered_v1 %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count() # 35 on go/no-go
 ```
 
 ## Remove outliers
@@ -269,7 +271,8 @@ Performance plots
 
 ```{r performance plot}
 # Study 1: performance plot
-data_summ_plot %>% 
+plot_perf_study1 <- 
+  data_summ_plot %>% 
   filter(experiment == "Study 1",
          trial_type %in% c("test ws", "test cswl")) %>% 
   ggplot(aes(x = speech_version, y = avg_resp, color = trial_type)) +
@@ -287,11 +290,18 @@ data_summ_plot %>%
   annotate("segment", x = 2, xend = 2.35, y = 0.25, yend = 0.25, linetype = "dashed") +
   annotate("segment", x = 3, xend = 3.35, y = 0.25, yend = 0.25, linetype = "dashed") +
   labs(title = "Study 1", y = "Proportion of correct selection", x = "Speech version") + 
-  theme_bw() +
+  theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5)
 
+plot_perf_study1
+
+#ggsave(plot = plot_perf_study1, 
+#       filename = here("03_output_graphics/plot_perf_study1.png"), 
+#       width = 12, height = 8, units = "cm", dpi = 300)
+
 # Study 2: performance plot
-data_summ_plot %>% 
+plot_perf_study2 <- 
+  data_summ_plot %>% 
   filter(experiment == "Study 2",
          trial_type %in% c("test ws", "test cswl")) %>% 
   ggplot(aes(x = speech_version, y = avg_resp, color = trial_type)) +
@@ -305,8 +315,14 @@ data_summ_plot %>%
   annotate("segment", x = 0.65, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
   annotate("segment", x = 1, xend = 1.35, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
   labs(title = "Study 2", y = "Proportion of correct selection", x = "Speech version") + 
-  theme_bw() +
+  theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5)
+
+plot_perf_study2
+
+#ggsave(plot = plot_perf_study2, 
+#       filename = here("03_output_graphics/plot_perf_study2.png"),
+#       width = 8, height = 8, units = "cm", dpi = 300)
 
 ```
 
@@ -316,7 +332,7 @@ Study2: By stimuli type
 # Study 2: performance plot ws by stimuli type
 data_filtered_v2 %>% 
   filter(experiment == "Study 2",
-         trial_type == "test ws") %>% 
+         trial_type == "test ws") %>%
   ggplot(aes(x = speech_version, y = is_correct, color = distractor_audio_type_ws)) +
   #geom_violin(position = position_dodge(0.8), alpha = 0.1, size = 0.3) +
   geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.3) +
@@ -345,7 +361,7 @@ data_filtered_v2 %>%
   scale_x_discrete() +
   #annotate("segment", x = 0.65, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
   annotate("segment", x = 0, xend = 4, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
-  labs(title = "Study 2 - CSWL", y = "Proportion of correct selection", x = "Speech version") + 
+  labs(title = "CSWL", y = "Proportion of correct selection", x = "Speech version") + 
   facet_wrap(~ experiment) +
   theme_bw() +
   theme(legend.title.align = 0.5)
