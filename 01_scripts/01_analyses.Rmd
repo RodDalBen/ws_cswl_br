@@ -15,7 +15,7 @@ Data analyses script containing descriptive and inferential statistics, as well 
 
 **OSF:** [project](ADD)
 
-**GitHub:** [repository](ADD)
+**GitHub:** [repository](https://github.com/RodDalBen/ws_cswl_br)
 
 **Doubts & suggestions:** <dalbenwork@gmail.com>
 
