@@ -1,35 +1,59 @@
 ---
-title: "Data analyses: Word segmentation and cross-situational word learning in parallel with Brazilians"
+title: "Data analyses for: <Putting statistics together: the interplay of transitional, cross-situational, and phonotactic probabilities>"
 author: "Rodrigo Dal Ben"
 date: "25/03/2021"
 output: html_document
 ---
 
-last update: 02/04/2021
+Last update: 27/08/2021
 
-# Brackground ######### FIX HERE ADD DETAILS
+***
 
-Data analyses for the study combining word segmentation (ws), cross-situational word learning (cswl), and phonotactics in parallel. The study was performed with Brazilian adults (both in person and online). For a full acount see the following reference.
+Data analyses script containing descriptive and inferential statistics, as well as visualizations for:
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in pareallel. *Journal ...* [*PsyArXiv preprint*](ADD)
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Putting statistics together: the interplay of transitional, cross-situational, and phonotactic probabilities *Journal ...* [*PsyArXiv preprint*](ADD)
 
-[**OSF project**](ADD)
+**OSF:** [project](ADD)
+
+**GitHub:** [repository](ADD)
 
 **Doubts & suggestions:** <dalbenwork@gmail.com>
 
+***
+
+The script has the following structure:
+
+1. Load packages
+2. Prepare the data
+3. Demographics
+4. Visualizations
+5. Descriptive statistics
+6. Inferential statistics
+
+***
+
 # Load packages
+
+To increase the chances of reproducibility, we load packages through the `groundhog`.
+
 ```{r load package}
-library(tidyverse)
-library(tidylog)
-library(boot)
-library(gmodels)
-library(lme4)
-library(brms)
-library(sjPlot)
-library(patchwork)
-library(janitor)
-library(RColorBrewer) 
-library(here)
+# groundhog
+pkgs_date <- "2021-08-10"
+pkgs <- c("here",
+          "tidyverse",
+          "boot", 
+          "gmodels", 
+          "lme4", 
+          "brms", 
+          "sjPlot", 
+          "patchwork", 
+          "janitor", 
+          "RColorBrewer",
+          "tidylog",
+          "see")
+
+library(groundhog) # version: 1.4.0
+groundhog::groundhog.library(pkg = pkgs, date = pkgs_date)
 
 # avoid scientific notation
 options(scipen = 0)
@@ -40,19 +64,41 @@ cb_pal <- c("#E69F00", "#009E73", "#0072B2", "#D55E00", "#999999", "#000000")
 
 # Prepare data
 
+Here we load 3 datasets:
+1. WS + CSWL: main dataset;
+2. WS: reanalysis dataset for word segementation only;
+3. CSWL: reanalysis dataset for cross-situational word learning only.
+
+Datasets 2 and 3 are not manipulated until the "Visualization" section and data is analyzed only in the "Comparison: joint vs. single tasks" section. Dataset 3 (CSWL) is already filtered for inattentive responses and outliers. Dataset is not. We remove outliers using the same parameters used for dataset 1, we do so under: Statitics > Inferential > Comparison > Prepare data > Remove outliers (code chunk #25).
+
 ```{r load data}
-# load full data
+# WS + CSWL, WS, CSWL
 load(here("02_data/data_ws_cswl_br.rda"))
+load(here("02_data/reanalysis_data_ws_br.rda"))
+data_cswl_br <- read.csv("https://osf.io/6zd2p/download", header = TRUE, na.strings = "NA")
 
-# change speech_version to factor
-data_ws_cswl_br <- 
-  data_ws_cswl_br %>% 
-  mutate(speech_version = factor(speech_version, levels = c("L_balanced", "L_aligned", "L_conflict")))
+# rename experiment from ws only 
+data_ws_br <- 
+  data_ws_br %>% 
+  mutate(experiment = "ws only")
 
-levels(data_ws_cswl_br$speech_version)
-
+# filter relevant data from cswl only & add columns to match the other dataset
+data_cswl_br <- 
+  data_cswl_br %>% 
+  filter(site == "online", block_cswl == 1) %>%  # keep only data from 1st block (experiment 2 of original study)
+  mutate(experiment = "cswl only", 
+         speech_version = NA,
+         block_ws = NA,
+         target_audio_ws = NA,
+         distractor_audio_ws = NA,
+         distractor_audio_type_ws = NA,
+         freq_pair = NA,
+         sona_gift_card = NA)
+  
 # check number of participants on each experiment and speech version
 data_ws_cswl_br %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count()
+data_ws_br %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count()
+data_cswl_br %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count()
 ```
 
 ## Remove inattentive/non-compliance
@@ -60,16 +106,16 @@ data_ws_cswl_br %>% group_by(experiment, speech_version) %>% distinct(p_n_unique
 For the **go/no-go condition** (online data collection) we remove participants who: 
 
 1. Had responses with reaction time greater than 3 SDs
-2. Failed in at any of the 5 catch trials during training
-3. Failed at any of the 6 catch trials at word segmentation test
+2. Failed in more than 2 of the 5 catch trials during training
+3. Failed in more than 2 of the 6 catch trials at word segmentation test
 4. Reported using cellphone (against instructions)
 5. Reported annotating during the task (against instructions). 
 
 ```{r inattentive/non-compliance}
 # reaction time of catch trials
-rt_inatt_study2 <- 
+rt_inatt_experiment2 <- 
   data_ws_cswl_br %>% 
-  filter(experiment == "Study 2",
+  filter(experiment == 2,
          trial_type %in% c("catch test ws", "catch training")
          ) %>% 
   group_by(trial_type) %>% 
@@ -80,9 +126,9 @@ rt_inatt_study2 <-
             )
 
 # inattention by participant and trial type
-inatt_study2 <- 
+inatt_experiment2 <- 
   data_ws_cswl_br %>% 
-  filter(experiment == "Study 2",
+  filter(experiment == 2,
          trial_type %in% c("catch cellphone", "catch annotation", "catch test ws", "catch training") # 5
          ) %>% 
   group_by(p_n_unique, trial_type) %>% 
@@ -93,9 +139,9 @@ inatt_study2 <-
                            trial_type == "catch annotation" & key_pressed == "s" ~ 0,
                            T ~ as.double(is_correct)),
     include_rt = case_when(trial_type == "catch test ws" & 
-                             rt < rt_inatt_study2$cutoff_up[1] & rt > rt_inatt_study2$cutoff_low[1] ~ T,
+                             rt < rt_inatt_experiment2$cutoff_up[1] & rt > rt_inatt_experiment2$cutoff_low[1] ~ T,
                            trial_type == "catch training" & 
-                             rt < rt_inatt_study2$cutoff_up[2] & rt > rt_inatt_study2$cutoff_low[2] ~ T,
+                             rt < rt_inatt_experiment2$cutoff_up[2] & rt > rt_inatt_experiment2$cutoff_low[2] ~ T,
                            T ~ F)
     ) %>%
   summarise(sum_is_correct = sum(is_correct, na.rm = T),
@@ -114,7 +160,7 @@ inatt_study2 <-
 
 # inattention by trial type
 inatt_trial_type <- 
-  inatt_study2 %>% 
+  inatt_experiment2 %>% 
   group_by(trial_type) %>% 
   summarise(include_is_correct = sum(include_is_correct),
             include_rt = sum(include_rt),
@@ -122,7 +168,7 @@ inatt_trial_type <-
 
 # inattention by participant
 inatt_participant <- 
-  inatt_study2 %>% 
+  inatt_experiment2 %>% 
   group_by(p_n_unique) %>% 
   summarise(include_final = if_else(sum(include) == 4, T, F))
   
@@ -173,14 +219,14 @@ data_filtered_v2 <-
                                    trial_type == "test ws" & speech_version == "L_aligned" & rt > rt_3sd$cutoff_up[4] ~ F,
                                    trial_type == "test cswl" & speech_version == "L_aligned" & rt > rt_3sd$cutoff_up[3] ~ F,
                                    
-                                   experiment == "Study 1" & trial_type == "test ws" & 
+                                   experiment == 1 & trial_type == "test ws" & 
                                      speech_version == "L_conflict" & rt > rt_3sd$cutoff_up[6] ~ F,
-                                   experiment == "Study 1" & trial_type == "test cswl" & 
+                                   experiment == 1 & trial_type == "test cswl" & 
                                      speech_version == "L_conflict" & rt > rt_3sd$cutoff_up[5] ~ F,
                                    
-                                   experiment == "Study 2" & trial_type == "test ws" & 
+                                   experiment == 2 & trial_type == "test ws" & 
                                      speech_version == "L_conflict" & rt > rt_3sd$cutoff_up[8] ~ F,
-                                   experiment == "Study 2" & trial_type == "test cswl" & 
+                                   experiment == 2 & trial_type == "test cswl" & 
                                      speech_version == "L_conflict" & rt > rt_3sd$cutoff_up[7] ~ F,
                                    
                                    T ~ T
@@ -190,7 +236,7 @@ data_filtered_v2 <-
 # summary of exclude trials by experiment/speech_version
 data_filtered_v2 %>% 
   filter(trial_type == "test ws" | trial_type == "test cswl") %>% 
-  group_by(experiment, speech_version, include_trial, trial_type) %>% 
+  group_by(experiment, include_trial, trial_type) %>% # , speech_version
   count() %>% 
   spread(include_trial, n) %>% 
   mutate(perc_excl = `FALSE`/`TRUE`)
@@ -212,7 +258,7 @@ data_filtered_v2 %>%
   group_by(p_n_unique) %>% 
   slice_head() %>%
   ungroup() %>% 
-  group_by(experiment, speech_version) %>% 
+  group_by(experiment) %>%  #, speech_version) %>% 
   mutate(tmp_gender = if_else(gender == "female", 1, 0)) %>%
   summarise(n = n(), 
             female = sum(tmp_gender), 
@@ -224,6 +270,7 @@ data_filtered_v2 %>%
 ```
 
 # Visualizations
+
 
 * Mean performance on each task for each language;
 
@@ -248,6 +295,25 @@ data_summ_plot <-
 
 data_summ_plot
 
+# summary data by stimuli type
+## frequency visual (300 vs. 150) exp 1 and 2
+data_summ_plot_freq <- 
+  data_filtered_v2 %>% 
+  filter(trial_type == "test cswl") %>% 
+  group_by(experiment, speech_version, freq_pair, p_n_unique) %>%
+  summarise(avg_resp = mean(is_correct, na.rm = T))
+
+data_summ_plot_freq
+
+## auditory type experiment 2
+data_summ_plot_audio_type <- 
+  data_filtered_v2 %>% 
+  filter(experiment == 2, trial_type == "test ws") %>% 
+  group_by(experiment, speech_version, distractor_audio_type_ws, p_n_unique) %>%
+  summarise(avg_resp = mean(is_correct, na.rm = T))
+
+data_summ_plot_audio_type
+
 # summary data for correlation plot
 # convert from 1, 2, 3, 4 to 0.25, 0.5, 0.75, 1 (respectively)
 data_summ_correlation <- 
@@ -262,159 +328,439 @@ data_summ_correlation
 
 ## Plots
 
-Performance plots
-
-#**ADD**
-- statistical annotation (https://indrajeetpatil.github.io/ggstatsplot/)
-- WS: Study 2 by stimuli type
-- CSWL = by pair frequency
+### Performance plots
 
 ```{r performance plot}
-# Study 1: performance plot
-plot_perf_study1 <- 
+# experiment 1: performance plot
+plot_perf_experiment1 <- 
   data_summ_plot %>% 
-  filter(experiment == "Study 1",
+  filter(experiment == 1,
          trial_type %in% c("test ws", "test cswl")) %>% 
-  ggplot(aes(x = speech_version, y = avg_resp, color = trial_type)) +
-  geom_violin(position = position_dodge(0.8), alpha = 0.1, size = 0.3) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.3) +
+  ggplot(aes(x = speech_version, y = avg_resp, fill = trial_type)) +
+  geom_violin(position = position_dodge(0.8), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(0.8), alpha = 0.6) +
   stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.8)) + # boot CIs
-  scale_color_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
+  scale_fill_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_x_discrete() +
+  scale_x_discrete(labels = c("Balanced", "Aligned", "Conflict")) +
   annotate("segment", x = 0.65, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
   annotate("segment", x = 1.65, xend = 2, y = 0.5, yend = 0.5, linetype = "dashed") + 
   annotate("segment", x = 2.65, xend = 3, y = 0.5, yend = 0.5, linetype = "dashed") + 
   annotate("segment", x = 1, xend = 1.35, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
   annotate("segment", x = 2, xend = 2.35, y = 0.25, yend = 0.25, linetype = "dashed") +
   annotate("segment", x = 3, xend = 3.35, y = 0.25, yend = 0.25, linetype = "dashed") +
-  labs(title = "Study 1", y = "Proportion of correct selection", x = "Speech version") + 
+  labs(title = "Experiment 1", y = "Proportion of correct selection", x = "Speech version") + 
   theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5)
 
-plot_perf_study1
+plot_perf_experiment1
 
-#ggsave(plot = plot_perf_study1, 
-#       filename = here("03_output_graphics/plot_perf_study1.png"), 
+#ggsave(plot = plot_perf_experiment1, 
+#       filename = here("03_output_graphics/plot_perf_experiment1.png"), 
 #       width = 12, height = 8, units = "cm", dpi = 300)
 
-# Study 2: performance plot
-plot_perf_study2 <- 
+# experiment 2: performance plot
+plot_perf_experiment2 <- 
   data_summ_plot %>% 
-  filter(experiment == "Study 2",
+  filter(experiment == 2,
          trial_type %in% c("test ws", "test cswl")) %>% 
-  ggplot(aes(x = speech_version, y = avg_resp, color = trial_type)) +
-  geom_violin(position = position_dodge(0.8), alpha = 0.1, size = 0.3) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.3) +
+  ggplot(aes(x = speech_version, y = avg_resp, fill = trial_type)) +
+  geom_violin(position = position_dodge(0.8), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(0.8), alpha = 0.6) +
   stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.8)) + # boot CIs
-  scale_color_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
+  scale_fill_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_x_discrete() +
+  scale_x_discrete(labels = "Conflict") +
   annotate("segment", x = 0.65, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
   annotate("segment", x = 1, xend = 1.35, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
-  labs(title = "Study 2", y = "Proportion of correct selection", x = "Speech version") + 
+  labs(title = "Experiment 2", y = "Proportion of correct selection", x = "Speech version") + 
   theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5)
 
-plot_perf_study2
+plot_perf_experiment2
 
-#ggsave(plot = plot_perf_study2, 
-#       filename = here("03_output_graphics/plot_perf_study2.png"),
+#ggsave(plot = plot_perf_experiment2, 
+#       filename = here("03_output_graphics/plot_perf_experiment2.png"),
 #       width = 8, height = 8, units = "cm", dpi = 300)
-
 ```
 
-Study2: By stimuli type
+### Single vs. parallel (joint) task
 
-```{r performance plots Study 2 stimuli type}
-# Study 2: performance plot ws by stimuli type
-data_filtered_v2 %>% 
-  filter(experiment == "Study 2",
-         trial_type == "test ws") %>%
-  ggplot(aes(x = speech_version, y = is_correct, color = distractor_audio_type_ws)) +
-  #geom_violin(position = position_dodge(0.8), alpha = 0.1, size = 0.3) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.3) +
+Here we use data from other experiments that had a single task: either segmentation or cross-situational word learning. We first prepare the data, then we plot.
+
+#### Prepare data
+
+```{r}
+# reanalysis: ws only
+data_summ_plot_ws_only <- 
+  data_ws_br %>% 
+  group_by(experiment, speech_version, p_n_unique, trial_type) %>%
+  filter(trial_type == "test ws") %>% 
+  mutate(experiment = "ws only") %>% 
+  summarise(avg_resp = mean(is_correct, na.rm = T))
+
+data_summ_plot_ws_only
+
+# reanalysis: cswl only
+data_summ_plot_cswl_only <- 
+  data_cswl_br %>% 
+  group_by(experiment, speech_version, p_n_unique, trial_type) %>%
+  filter(trial_type == "test cswl") %>%
+  mutate(experiment = "cswl only",
+         speech_version = "cswl only") %>% 
+  summarise(avg_resp = mean(is_correct, na.rm = T))
+
+data_summ_plot_cswl_only
+
+# joint dataset
+data_summ_plot_all <- 
+  data_summ_plot %>%
+  filter(experiment == 1, # 2AFC only
+         trial_type %in% c("test ws", "test cswl")) %>% 
+  mutate(experiment = "ws + cswl joint") %>%
+  rbind(., data_summ_plot_ws_only) %>% 
+  rbind(., data_summ_plot_cswl_only) %>% 
+  mutate(experiment = factor(experiment, levels = c("ws only", "cswl only", "ws + cswl joint")),
+         speech_version = case_when(speech_version == "L_balanced" ~ "Balanced", 
+                                    speech_version == "L_aligned" ~ "Aligned", 
+                                    speech_version == "L_conflict" ~ "Conflict", 
+                                    TRUE ~ "cswl only"),
+         speech_version = factor(speech_version, levels = c("cswl only", "Balanced", "Aligned", "Conflict")))
+
+levels(data_summ_plot_all$experiment)
+levels(data_summ_plot_all$speech_version)
+```
+
+#### Word segmentation
+
+```{r}
+plot_ws_only <- 
+  data_summ_plot_all %>% 
+  filter(experiment %in% c("ws only", "ws + cswl joint"),
+         trial_type == "test ws") %>% 
+  ggplot(aes(x = experiment, y = avg_resp, fill = experiment)) +
+  geom_violin(position = position_dodge(0.8), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(0.8), alpha = 0.4) +
   stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.8)) + # boot CIs
-  #scale_color_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
+  scale_fill_manual(values = cb_pal[4:5], name = "Experiment", labels = c("WS only", "Parallel task")) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_x_discrete() +
-  annotate("segment", x = 0, xend = 2, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
-  #annotate("segment", x = 1, xend = 1.35, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
-  labs(title = "Study 2 - Word segmentation", y = "Proportion of correct selection", x = "Speech version") + 
-  theme_bw() +
-  theme(legend.title.align = 0.5)
+  scale_x_discrete(labels = c("WS \nonly", "Parallel")) +
+  facet_wrap(~ speech_version) +
+  annotate("segment", x = 0.5, xend = 2.5, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
+  labs(title = "Segmentation only vs. parallel (ws+cswl) experiment", y = "Proportion of correct selection", x = "Experiment") + 
+  theme_classic(base_size = 10) +
+  #theme(legend.title.align = 0.5)
+  theme(legend.position = "none")
 
-# Study 1 & 2: performance plot
-data_filtered_v2 %>% 
-  filter(#experiment == "Study 2",
-         trial_type == "test cswl") %>% 
-  ggplot(aes(x = speech_version, y = is_correct, color = freq_pair)) +
-  #geom_violin(position = position_dodge(0.8), alpha = 0.1, size = 0.3) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8), alpha = 0.3) +
+plot_ws_only
+
+#ggsave(plot = plot_ws_only, 
+#       filename = here("03_output_graphics/plot_ws_only_comparison.png"),
+#       width = 12, height = 8, units = "cm", dpi = 300)
+```
+
+#### Cross-situational word learning
+
+```{r}
+plot_cswl_only <- 
+  data_summ_plot_all %>% 
+  filter(experiment %in% c("cswl only", "ws + cswl joint"),
+         trial_type == "test cswl") %>%
+  ggplot(aes(x = speech_version, y = avg_resp, fill = experiment)) +
+  geom_violin(position = position_dodge(0.8), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(0.8), alpha = 0.4) +
   stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.8)) + # boot CIs
-  #scale_color_manual(values = cb_pal, name = "Task", labels = c("Segmentation", "Mapping")) +
+  scale_fill_manual(values = cb_pal[4:5], name = "Experiment", labels = c("cswl only", "parallel task")) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_x_discrete() +
-  #annotate("segment", x = 0.65, xend = 1, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
+  scale_x_discrete(labels = c("cswl only", "Parallel -\n Balanced", 
+                              "Parallel -\n Aligned", "Parallel -\n Conflict")) +
+  annotate("segment", x = 0.5, xend = 4.5, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
+  labs(title = "Cross-situational word learning only \nvs. parallel (ws+cswl) experiment", y = "Proportion of correct selection", x = "Experiment and language version") + 
+  theme_classic(base_size = 10) +
+  #theme(legend.title.align = 0.5)
+  theme(legend.position = "none")
+
+plot_cswl_only
+
+#ggsave(plot = plot_cswl_only, 
+#       filename = here("03_output_graphics/plot_cswl_only_comparison.png"),
+#       width = 12, height = 8, units = "cm", dpi = 300)
+```
+
+### Experiment 2: segmentation by stimuli type
+
+```{r performance plots seg stimuli type exp 2}
+# experiment 2: performance plot ws by stimuli type
+plot_seg_exp2_stimuli_type <- 
+  data_summ_plot_audio_type %>% 
+  ggplot(aes(x = distractor_audio_type_ws, y = avg_resp, fill = distractor_audio_type_ws)) +
+  geom_violin(position = position_dodge(1), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(1), alpha = 0.6) +
+  #geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 1), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 1)) + # boot CIs
+  scale_fill_manual(values = c("white", cb_pal[3], cb_pal[6])) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_x_discrete(labels = c("Non-word", "Part-word", "Word")) +
+  annotate("segment", x = 0.5, xend = 3.5, y = 0.5, yend = 0.5, linetype = "dashed") + # chance level ws
+  labs(title = "Experiment 2 - Speech segmentation\n by stimuli type", y = "Proportion of correct evaluation", x = "Stimuli type") + 
+  theme_classic(base_size = 10) +
+  theme(legend.position = "none",
+        axis.ticks.x = element_blank())
+
+plot_seg_exp2_stimuli_type
+
+#ggsave(plot = plot_seg_exp2_stimuli_type, 
+#       filename = here("03_output_graphics/plot_seg_type_experiment2.png"),
+#       width = 10, height = 8, units = "cm", dpi = 300)
+```
+
+### Experiment 1 & 2: mapping by pair frequency (300 or 150)
+
+```{r performance plots map stimuli freq exp 1 and 2}
+# experiment 1: mapping by pair frequency
+plot_map_exp1_freq_pair <- 
+  data_summ_plot_freq %>% 
+  filter(experiment == 1) %>% 
+  ggplot(aes(x = speech_version, y = avg_resp, fill = freq_pair)) +
+  geom_violin(position = position_dodge(0.85), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.4, position = position_dodge(0.85), alpha = 0.6) +
+  stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.85)) + # boot CIs
+  scale_fill_manual(values = cb_pal[4:5], name = "Frequency", labels = c("High", "Low")) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_x_discrete(labels = c("Balanced", "Aligned", "Conflict")) +
   annotate("segment", x = 0, xend = 4, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
-  labs(title = "CSWL", y = "Proportion of correct selection", x = "Speech version") + 
-  facet_wrap(~ experiment) +
-  theme_bw() +
+  labs(title = "Experiment 1 - Mapping by pair frequency", 
+       y = "Proportion of correct selection", 
+       x = "Speech version") + 
+  theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5)
 
+plot_map_exp1_freq_pair
+
+#ggsave(plot = plot_map_exp1_freq_pair, 
+#       filename = here("03_output_graphics/plot_map_freq_experiment1.png"),
+#       width = 12, height = 8, units = "cm", dpi = 300)
+
+
+# experiment 2: mapping by pair frequency
+plot_map_exp2_freq_pair <- 
+  data_summ_plot_freq %>% 
+  filter(experiment == 2) %>% 
+  ggplot(aes(x = speech_version, y = avg_resp, fill = freq_pair)) +
+  geom_violin(position = position_dodge(0.85), alpha = 0.6, size = 0.3) +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5, position = position_dodge(0.85), alpha = 0.6) +
+  stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.85)) + # boot CIs
+  scale_fill_manual(values = cb_pal[4:5], name = "Frequency", labels = c("High", "Low")) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_x_discrete(labels = "Conflict") +
+  annotate("segment", x = 0, xend = 2, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
+  labs(title = "Experiment 2 - Mapping by pair frequency", 
+       y = "Proportion of correct selection", 
+       x = "Speech version") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5)
+
+plot_map_exp2_freq_pair
+
+#ggsave(plot = plot_map_exp2_freq_pair, 
+#       filename = here("03_output_graphics/plot_map_freq_experiment2.png"),
+#       width = 10, height = 8, units = "cm", dpi = 300)
 ```
 
-Correlation plots
+### Correlation plots
 
-**ADD**
-- edit the legend for the `geom_count()`
-- consider plotting by participant and reporting the stats for the `rmcorr` (repeated measures correlation)
-- because the number of trials is different for cswl and ws, consider aggregating into 3 or 5 bins and comparing the bins per participant. They violate the assumption of independence, but is better than a single aggregate point per participant.
+#### Segmentation & Mapping
 
-```{r correlation plots}
-# segmentation and mapping
-data_summ_correlation %>% 
-  ggplot(aes(x = `test ws`, y = `test cswl`)) +#, color = speech_version)) +
-  geom_count(alpha = 0.5) +
-  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
-  facet_wrap(experiment ~ speech_version) +
+```{r correlation plots seg map}
+# Exp 1 segmentation and mapping
+plot_corr_seg_map_exp1 <- 
+  data_summ_correlation %>%
+  mutate(speech_version_label = case_when(speech_version == "L_balanced" ~ "Balanced", 
+                                          speech_version == "L_aligned" ~ "Aligned", 
+                                          speech_version == "L_conflict" ~ "Conflict"),
+         speech_version_label = factor(speech_version_label, levels = c("Balanced", "Aligned", "Conflict"))) %>% 
+  filter(experiment == 1) %>% 
+  ggplot(aes(x = `test ws`, y = `test cswl`, color = speech_version)) +
+  geom_count(alpha = 0.4) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  scale_color_manual(values = cb_pal, guide = F) +#, name = "Frequency", labels = c("High", "Low")) +
+  facet_wrap(~ speech_version_label) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_size_area() +
-  labs(x = "Proportion of corret segmentation", y = "Proportion of corret mapping") + 
-  theme_bw()
+  labs(title = "Experiment 1 - Correlation between segmentation and mapping",
+       x = "Proportion of corret segmentation", y = "Proportion of corret mapping") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
 
-# segmentation and self evaluation
-a <- 
-data_summ_correlation %>%
-  ggplot(aes(x = `test ws`, y = `self evaluation ws`)) +#, color = speech_version)) +
-  geom_count(alpha = 0.5) +
-  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
-  facet_wrap(experiment ~ speech_version) +
+plot_corr_seg_map_exp1
+
+#ggsave(plot = plot_corr_seg_map_exp1, 
+#       filename = here("03_output_graphics/plot_corr_seg_map_exp1.png"),
+#       width = 14, height = 6, units = "cm", dpi = 300)
+
+
+# Exp 2 segmentation and mapping
+plot_corr_seg_map_exp2 <- 
+  data_summ_correlation %>%
+  filter(experiment == 2) %>% 
+  ggplot(aes(x = `test ws`, y = `test cswl`, color = speech_version)) +
+  geom_count(alpha = 0.3) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  scale_color_manual(values = cb_pal[3], guide = F) +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0, 1)) +
+  #scale_y_continuous(expand = c(0, ), limits = c(0, 1)) +
   scale_size_area() +
-  labs(title = "Segmentation performance and self-evaluation", 
+  labs(title = "Experiment 2 - Correlation between segmentation and mapping",
+       x = "Proportion of corret segmentation", y = "Proportion of corret mapping") + 
+  theme_classic(base_size = 10) +
+  theme(legend.position = "none")
+
+plot_corr_seg_map_exp2
+
+#ggsave(plot = plot_corr_seg_map_exp2, 
+#       filename = here("03_output_graphics/plot_corr_seg_map_exp2.png"),
+#       width = 10, height = 6, units = "cm", dpi = 300)
+```
+
+#### Self-evaluation
+
+* Experiment 1
+
+```{r correlation plots perf self-eval exp1}
+# segmentation and self evaluation
+plot_corr_seg_eval_exp1 <- 
+  data_summ_correlation %>%
+  filter(experiment == 1) %>%
+  mutate(speech_version_label = case_when(speech_version == "L_balanced" ~ "Balanced", 
+                                          speech_version == "L_aligned" ~ "Aligned", 
+                                          speech_version == "L_conflict" ~ "Conflict"),
+         speech_version_label = factor(speech_version_label, levels = c("Balanced", "Aligned", "Conflict"))) %>% 
+  ggplot(aes(x = `test ws`, y = `self evaluation ws`, color = speech_version)) +
+  geom_count(alpha = 0.3) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  facet_wrap(~ speech_version_label) +
+  scale_color_manual(values = cb_pal, guide = F) +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0, 1)) +
+  scale_size_area() +
+  labs(title = "Experiment 1 - Segmentation and self-evaluation", 
        x = "Proportion of corret segmentation", 
        y = "Self-evaluation") + 
-  theme_bw()
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
+
+plot_corr_seg_eval_exp1
+
+#ggsave(plot = plot_corr_seg_eval_exp1, 
+#       filename = here("03_output_graphics/plot_corr_seg_eval_exp1.png"),
+#       width = 14, height = 6, units = "cm", dpi = 300)
+
 
 # mapping and self evaluation
-b <- 
-data_summ_correlation %>%  
-  ggplot(aes(x = `test cswl`, y = `self evaluation cswl`)) +#, color = speech_version)) +
-  geom_count(alpha = 0.5) +
-  geom_smooth(method = "lm", color = "dark grey", alpha = 0.3) +
-  facet_wrap(experiment ~ speech_version) +
+plot_corr_map_eval_exp1 <- 
+  data_summ_correlation %>%
+  filter(experiment == 1) %>%
+  mutate(speech_version_label = case_when(speech_version == "L_balanced" ~ "Balanced", 
+                                          speech_version == "L_aligned" ~ "Aligned", 
+                                          speech_version == "L_conflict" ~ "Conflict"),
+         speech_version_label = factor(speech_version_label, levels = c("Balanced", "Aligned", "Conflict"))) %>% 
+  ggplot(aes(x = `test cswl`, y = `self evaluation cswl`, color = speech_version)) +
+  geom_count(alpha = 0.3) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  facet_wrap(~ speech_version_label) +
+  scale_color_manual(values = cb_pal, guide = F) +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0, 1)) +
   scale_size_area() +
-  labs(title = "Mapping performance and self-evaluation", 
+  labs(title = "Experiment 1 - Mapping and self-evaluation", 
        x = "Proportion of corret mapping", 
        y = "Self-evaluation") + 
-  theme_bw()
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
 
-## joint self-evaluations
-a + b
+plot_corr_map_eval_exp1
+
+#ggsave(plot = plot_corr_map_eval_exp1, 
+#       filename = here("03_output_graphics/plot_corr_map_eval_exp1.png"),
+#       width = 14, height = 6, units = "cm", dpi = 300)
+
+# joint, segmentation and mapping
+joint_perf_eval_exp1 <- plot_corr_seg_eval_exp1 / plot_corr_map_eval_exp1
+
+#ggsave(plot = joint_perf_eval_exp1, 
+#       filename = here("03_output_graphics/plot_corr_eval_joint_exp1.png"),
+#       width = 14, height = 12, units = "cm", dpi = 300)
+```
+
+
+* Experiment 2
+
+```{r correlation plots perf self-eval exp2}
+# segmentation and self evaluation
+plot_corr_seg_eval_exp2 <- 
+  data_summ_correlation %>%
+  filter(experiment == 2) %>%
+  mutate(speech_version_label = case_when(speech_version == "L_conflict" ~ "Conflict")) %>% 
+  ggplot(aes(x = `test ws`, y = `self evaluation ws`, color = speech_version)) +
+  geom_count(alpha = 0.3) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  #facet_wrap(~ speech_version_label) +
+  scale_color_manual(values = cb_pal[3], guide = F) +
+  scale_size_area() +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
+  labs(title = "Experiment 2 - \nSegmentation and self-evaluation", 
+       x = "Proportion of corret segmentation", 
+       y = "Self-evaluation") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
+
+plot_corr_seg_eval_exp2
+
+#ggsave(plot = plot_corr_seg_eval_exp2, 
+#       filename = here("03_output_graphics/plot_corr_seg_eval_exp2.png"),
+#       width = 8, height = 6, units = "cm", dpi = 300)
+
+
+# mapping and self evaluation
+plot_corr_map_eval_exp2 <- 
+  data_summ_correlation %>%
+  filter(experiment == 2) %>%
+  mutate(speech_version_label = case_when(speech_version == "L_conflict" ~ "Conflict")) %>% 
+  ggplot(aes(x = `test cswl`, y = `self evaluation cswl`, color = speech_version)) +
+  geom_count(alpha = 0.3) +
+  geom_smooth(method = "lm", se = F, color = "dark grey", alpha = 0.3, fullrange = T) +
+  #facet_wrap(~ speech_version_label) +
+  scale_color_manual(values = cb_pal[3], guide = F) +
+  scale_size_area() +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
+  labs(title = "Experiment 2 - \nMapping and self-evaluation", 
+       x = "Proportion of corret mapping", 
+       y = "Self-evaluation") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
+
+plot_corr_map_eval_exp2
+
+#ggsave(plot = plot_corr_map_eval_exp2, 
+#       filename = here("03_output_graphics/plot_corr_map_eval_exp2.png"),
+#       width = 8, height = 6, units = "cm", dpi = 300)
+
+# joint, segmentation and mapping
+joint_perf_eval_exp2 <- plot_corr_seg_eval_exp2 + (plot_corr_map_eval_exp2 + theme(axis.title.y = element_blank(), axis.text.y = element_blank()))
+
+#ggsave(plot = joint_perf_eval_exp2, 
+#       filename = here("03_output_graphics/plot_corr_eval_joint_exp2.png"),
+#       width = 15, height = 8, units = "cm", dpi = 300)
 ```
 
 # Statistics
@@ -436,113 +782,161 @@ data_summ_plot %>%
   mutate(ci_low = if_else(trial_type %in% c("test ws", "test cswl"), ci_low, NA_real_),
          ci_high = if_else(trial_type %in% c("test ws", "test cswl"), ci_high, NA_real_),
          d = if_else(trial_type %in% c("test ws", "test cswl"), d, NA_real_),
-         
          avg = if_else(trial_type %in% c("self evaluation ws", "self evaluation cswl"), avg*0.25, avg),
          sd = if_else(trial_type %in% c("self evaluation ws", "self evaluation cswl"), sd*0.25, sd)
          ) 
+
+# descriptive by stimuli type
+# Experiment 2 - segmentation 
+data_summ_plot_audio_type %>% 
+  group_by(distractor_audio_type_ws) %>% 
+  summarise(avg = mean(avg_resp, na.rm = T),
+            sd = sd(avg_resp, na.rm = T))
+
+# Experient 1 & 2 - mapping (high, low)
+data_summ_plot_freq %>% 
+  group_by(experiment, speech_version, freq_pair) %>% 
+  summarise(avg = mean(avg_resp, na.rm = T),
+            sd = sd(avg_resp, na.rm = T))
 ```
 
 ## Inferential
 
-#**ADD**:
-- Analysis of `freq_pair` on cswl
-
-We run 4 analyses:
+We run 3 analyses:
 
 1. Frequentist Logistic mixed model (`ws`, `cswl`);
+  1.1. `WS`;
+  1.2. `CSWL`;
 2. Correlations:
   2.1. Between `ws` and `cswl` performance; 
   2.2. Between `self evaluation` and `ws` or `cswl` performance;
-3. Bayesian Logistic mixed model (`ws`, `cswl`);
-
+3. Logistic mixed model between `ws` and `cswl` performance;
 
 Given our binary outcome, odds ratio (OR) for each predictor serve as **effect sizes** estimations.
 
-### Frequentist
-
-- Study 1: Balanced (intercept) -> Aligned -> Conflict -> Conflict
-- Study 2: Against chance;
+- experiment 1: Balanced (intercept) -> Aligned -> Conflict -> Conflict
+- experiment 2: Against chance;
 - Maximal random effects structure: `(1|item) + (1|participant)`. The random slope & intercept `(participants|experiment)` does not have enough variability in the groups (3 words by 60 or 29 participants).
 
 #### Word-segmentation
 
-**Study 1**
+**experiment 1**
 
-```{r freq ws study 1}
-# Study 1
-mod_freq_ws_study1 <-
+```{r freq ws experiment 1}
+# experiment 1
+mod_freq_ws_experiment1 <-
   data_filtered_v2 %>% 
-  filter(experiment == "Study 1",
+  filter(experiment == 1,
          trial_type == "test ws") %>% 
   glmer(is_correct ~ logit(chance_level) + speech_version + (1|target_audio_ws) + (1|p_n_unique),
         family = "binomial",
         data = .
         )
 
-summary(mod_freq_ws_study1)
-sjPlot::tab_model(mod_freq_ws_study1,
-                  title = "Frequentist, Study 1 - Segmentation")
+summary(mod_freq_ws_experiment1)
+sjPlot::tab_model(mod_freq_ws_experiment1,
+                  title = "Frequentist, Experiment 1 - Segmentation")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_exp1.doc"))
 ```
 
-**Study 2**
+**experiment 2**
 
 On the go/no-go trials, participants heard either *non-words*, *words*, or *part-words*. Here we model the OR for each of this stimuli status.
 
-```{r freq ws study 2}
-# Study 2
-mod_freq_ws_study2 <-
+```{r freq ws experiment 2}
+# experiment 2
+mod_freq_ws_experiment2 <-
   data_filtered_v2 %>% 
-  filter(experiment == "Study 2",
+  filter(experiment == 2,
          trial_type == "test ws") %>% 
   glmer(is_correct ~ logit(chance_level) + distractor_audio_type_ws + (1|target_audio_ws) + (1|p_n_unique),
         family = "binomial",
         data = .
         )
 
-summary(mod_freq_ws_study2)
-sjPlot::tab_model(mod_freq_ws_study2,
-                  title = "Frequentist, Study 2 - Segmentation")
+summary(mod_freq_ws_experiment2)
+sjPlot::tab_model(mod_freq_ws_experiment2,
+                  title = "Frequentist, Experiment 2 - Segmentation")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_exp2.doc"))
 ```
 
 #### Cross-situational word learning
 
-**Study 1**
+**experiment 1**
 
-```{r freq cswl study 1}
+```{r freq cswl experiment 1}
 # maximal random effects
-mod_freq_cswl_study1 <-
+mod_freq_cswl_experiment1 <-
   data_filtered_v2 %>% 
-  filter(experiment == "Study 1",
+  filter(experiment == 1,
          trial_type == "test cswl") %>% 
   glmer(is_correct ~ logit(chance_level) + speech_version*freq_pair + (1|target_visual) + (1|p_n_unique),
         family = "binomial",
         data = .
         )
 
-summary(mod_freq_cswl_study1)
-sjPlot::tab_model(mod_freq_cswl_study1,
-                  title = "Frequentist, Study 1 - Mapping")
+summary(mod_freq_cswl_experiment1)
+sjPlot::tab_model(mod_freq_cswl_experiment1,
+                  title = "Frequentist, Experiment 1 - Mapping")#, 
+                  #file = here("03_output_graphics/mod_freq_map_exp1.doc"))
+
+# inspection plots
+data_filtered_v2 %>% 
+  filter(experiment == 1,
+         trial_type == "test cswl") %>% 
+  ggplot(aes(x = is_correct)) +
+  geom_histogram() +
+  facet_wrap(speech_version ~ freq_pair) +
+  theme_light()
 ```
 
-**Study 2**
+**experiment 2**
 
-#**CHECK** 
-According to the plots and descriptive, this should be significantly above chance (but see the violin plot showing a fat distribution just on chance leve).
-
-```{r freq cswl study 2}
+```{r freq cswl experiment 2}
 # maximal random effects
-mod_freq_cswl_study2 <-
+mod_freq_cswl_experiment2 <-
   data_filtered_v2 %>% 
-  filter(experiment == "Study 2",
+  filter(experiment == 2,
          trial_type == "test cswl") %>% 
   glmer(is_correct ~ logit(chance_level) + freq_pair + (1|target_visual) + (1|p_n_unique),
         family = "binomial",
         data = .
         )
 
-summary(mod_freq_cswl_study2)
-sjPlot::tab_model(mod_freq_cswl_study2,
-                  title = "Frequentist, Study 2 - Mapping")
+summary(mod_freq_cswl_experiment2)
+sjPlot::tab_model(mod_freq_cswl_experiment2,
+                  title = "Frequentist, Experiment 2 - Mapping")#, 
+                  #file = here("03_output_graphics/mod_freq_map_exp2.doc"))
+
+
+# plots to confirm the distribution of responses
+## histogram
+data_filtered_v2 %>% 
+  filter(experiment == 2,
+         trial_type == "test cswl") %>% 
+  ggplot(aes(x = is_correct)) +
+  geom_histogram() +
+  facet_wrap(speech_version ~ freq_pair) +
+  theme_light()
+
+# mean boostrap w/ violin
+data_filtered_v2 %>% 
+  filter(experiment == 2,
+         trial_type == "test cswl") %>% 
+  ggplot(aes(x = speech_version, y = is_correct, fill = freq_pair)) +
+  geom_violin(position = position_dodge(0.85), alpha = 0.6, size = 0.3) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.85), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.85)) + # boot CIs
+  scale_fill_manual(values = cb_pal[4:5], name = "Frequency", labels = c("High", "Low")) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_x_discrete(labels = "Conflict") +
+  annotate("segment", x = 0, xend = 2, y = 0.25, yend = 0.25, linetype = "dashed") + # chance level cswl
+  labs(title = "Experiment 2 - Mapping by pair frequency", 
+       y = "Proportion of correct selection", 
+       x = "Speech version") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5)
 ```
 
 ### Correlation
@@ -560,64 +954,279 @@ data_summ_correlation %>%
 ```{r correlation ws cswl self evaluation}
 data_summ_correlation %>% 
   group_by(experiment, speech_version) %>% 
-  summarise(cor_ws = cor(`test ws`, `self evaluation ws`, method = "spearman"),
-            cor_cswl = cor(`test cswl`, `self evaluation cswl`, method = "spearman"))
+  summarise(cor_ws_self = cor(`test ws`, `self evaluation ws`, method = "spearman"),
+            cor_cswl_self = cor(`test cswl`, `self evaluation cswl`, method = "spearman"))
 ```
 
 
-### Bayesian
+#### Word Segmentation & Cross-Situational Word Learning
 
-#**CHECK** I will finish working on the frequentist model, and then come back here.
+##### Prepare data
 
-#### Word-segmentation
-
-```{r bay ws study 1}
-# maximal random effects
-mod_bay_ws_study1 <-
+```{r prepare data interaction ws cswl}
+# temporary sets
+temp0 <-
   data_filtered_v2 %>% 
-  filter(experiment == "Study 1",
-         trial_type == "test ws") %>% 
-  brm(is_correct ~ logit(chance_level) + speech_version + (1|target_audio_ws) + (1|p_n_unique),
-      family = "bernoulli",
-      data = .,
-      iter = 10000,
-      chains = 4
-      )
+  select(p_n_unique, trial_type, is_correct) %>%
+  filter(trial_type %in% c("test ws", "test cswl")) %>% 
+  mutate(p_n_unique = p_n_unique + row_number()) %>% 
+  pivot_wider(names_from = trial_type, values_from = is_correct) %>% 
+  mutate(p_n_unique = p_n_unique - row_number()) %>% 
+  unnest() 
 
-summary(mod_bay_ws_study1)
-sjPlot::tab_model(mod_bay_ws_study1,
-                  title = "Bayesian, Study 1 - Segmentation")
-```
+temp1 <- 
+  tibble(p_n_unique = temp0$p_n_unique, test_ws = temp0$`test ws`) %>% 
+  drop_na() %>% 
+  group_by(p_n_unique) %>% 
+  mutate(i = row_number()) %>% 
+  mutate(i = paste(p_n_unique, row_number()))
 
-#### Cross-situational word learning
+temp2 <- 
+  tibble(p_n_unique = temp0$p_n_unique, test_cswl = temp0$`test cswl`) %>% 
+  drop_na() %>% 
+  group_by(p_n_unique) %>% 
+  mutate(i = paste(p_n_unique, row_number()))
 
-```{r bay cswl Study 1}
-# maximal random effects
-mod_bay_cswl_study1 <-
+temp3 <- 
   data_filtered_v2 %>% 
-  filter(experiment == "Study 1",
-         trial_type == "test cswl") %>% 
-  brm(is_correct ~ logit(chance_level) + speech_version + (1|target_visual) + (1|p_n_unique),
-      family = "bernoulli",
-      data = .,
-      iter = 10000
-      )
+  group_by(p_n_unique) %>% 
+  slice_head() %>% 
+  select(p_n_unique, speech_version, experiment)
 
-summary(mod_bay_across_cswl)
-sjPlot::tab_model(mod_bay_across_cswl)
+temp4 <- 
+  left_join(temp1, temp2, by = "i") %>% 
+  mutate(p_n_unique = p_n_unique.x) %>% 
+  select(-p_n_unique.x, -p_n_unique.y, -i) 
+
+# final set to be used in the model
+data_reg_ws_cswl <- left_join(temp4, temp3, by = "p_n_unique")
 ```
 
-Correlation - sample code (from exp3_seg)
-```{r}
-# corr between ws and cswl (correct, rt)
-data_summary_corr_ws_cswl <- 
-  data_summary %>% 
-  select(id, trial_type, m_correct) %>% 
-  group_by(id) %>% 
-  spread(trial_type, m_correct)
+##### Model
+
+```{r interaction ws cswl model}
+# experiment 1
+## performance on WS as predictor of performance on CSWL
+mod_ws_cswl_exp1 <- 
+  data_reg_ws_cswl %>% 
+  filter(experiment == 1) %>% 
+  glmer(test_ws ~ test_cswl:speech_version + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+## performance on CSWL as predictor of performance on WS
+mod_cswl_ws_exp1 <- 
+  data_reg_ws_cswl %>% 
+  filter(experiment == 1) %>% 
+  glmer(test_cswl ~ test_ws:speech_version + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+sjPlot::tab_model(mod_ws_cswl_exp1, mod_cswl_ws_exp1, 
+                  show.p = F,
+                  title = "Experiment 1 - WS & CSWL: WS as predictor of CSWL, and CSWL as predictor of WS")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_map_exp1.doc"))
+
+# experiment 2
+## performance on WS as predictor of performance on CSWL
+mod_ws_cswl_exp2 <- 
+  data_reg_ws_cswl %>% 
+  filter(experiment == 2) %>% 
+  glmer(test_ws ~ test_cswl + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+## performance on CSWL as predictor of performance on WS
+mod_cswl_ws_exp2 <- 
+  data_reg_ws_cswl %>% 
+  filter(experiment == 2) %>% 
+  glmer(test_cswl ~ test_ws + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+sjPlot::tab_model(mod_ws_cswl_exp2, mod_cswl_ws_exp2, 
+                  show.p = F,
+                  title = "Experiment 2 - WS & CSWL: WS as predictor of CSWL, and CSWL as predictor of WS")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_map_exp2.doc"))
 ```
 
+### Comparison: parallel (joint) vs. single tasks
 
-### Frequentist
-### Bayesian
+##### Prepare data
+
+###### Remove outliers: dataset 2
+
+We remove test trials (both ws and cswl), for all conditions, with reaction time greater than 3 SDs. 
+
+```{r dataset 2 outliers}
+# calculate sd
+ds2_rt_3sd <-
+  data_ws_br %>% 
+  group_by(speech_version) %>% 
+  filter(trial_type == "test ws") %>% 
+  summarise(rt_avg = mean(rt, na.rm = T),
+            rt_3sd = 3*sd(rt, na.rm = T),
+            cutoff_low = rt_avg - rt_3sd,
+            cutoff_up = rt_avg + rt_3sd)
+
+ds2_rt_3sd
+
+# visualize 3 SDs, facet by speech_version
+data_ws_br %>% 
+  filter(trial_type == "test ws") %>% 
+  ggplot(aes(x = rt)) +
+  geom_histogram() +
+  facet_wrap(~ speech_version)
+
+# remove outliers
+data_ws_br_v2 <- 
+  data_ws_br %>% 
+  mutate(include_trial = case_when(trial_type == "test ws" & speech_version == "L_balanced" & rt > ds2_rt_3sd$cutoff_up[1] ~ F,
+                                   trial_type == "test ws" & speech_version == "L_aligned" & rt > ds2_rt_3sd$cutoff_up[2] ~ F,
+                                   trial_type == "test ws" & speech_version == "L_conflict" & rt > ds2_rt_3sd$cutoff_up[3] ~ F,
+                                   T ~ T
+                                   ))
+
+# summary of exclude trials by experiment/speech_version
+data_ws_br_v2 %>% 
+  filter(trial_type == "test ws") %>% 
+  group_by(include_trial) %>% # , speech_version) %>% 
+  count() %>% 
+  spread(include_trial, n) %>% 
+  mutate(perc_excl = `FALSE`/`TRUE`)
+
+# exclude trials
+data_ws_br_v2 <- 
+  data_ws_br_v2 %>% 
+  filter(include_trial == T) %>% 
+  select(-include_trial) # 24 trials (2% overall)
+```
+
+###### Combine datasets: 1 (ws + cswl), 2 (ws only), 3 (cswl only)
+
+```{r prepare data comparison parallel vs single experiment}
+# set common columns between datasets
+col_diff <- intersect(names(data_filtered_v2), names(data_cswl_br))
+col_diff_v2 <- intersect(col_diff, names(data_ws_br_v2))
+
+# create dataset
+data_filtered_v3 <- 
+  data_filtered_v2 %>%
+  select(col_diff_v2) %>% #keep only columns that intersect
+  filter(experiment == 1) %>% # 2AFC
+  mutate(experiment = "ws + cswl joint") %>% 
+  filter(trial_type %in% c("test ws", "test cswl")) 
+
+data_ws_br_v3 <- 
+  data_ws_br %>% 
+  select(col_diff_v2)
+
+data_cswl_br_v2 <- 
+  data_cswl_br %>% 
+  select(col_diff_v2)
+
+# join dataset
+data_single_parallel <- 
+  data_filtered_v3 %>% 
+  rbind(., data_ws_br_v3) %>% 
+  rbind(., data_cswl_br_v2) %>% 
+  mutate(experiment = factor(experiment, levels = c("ws only", "cswl only", "ws + cswl joint")),
+         speech_version = case_when(speech_version == "L_balanced" ~ "Balanced", 
+                                    speech_version == "L_aligned" ~ "Aligned", 
+                                    speech_version == "L_conflict" ~ "Conflict", 
+                                    TRUE ~ "cswl only"),
+         speech_version = factor(speech_version, levels = c("cswl only", "Balanced", "Aligned", "Conflict")))
+
+# check factor levels
+levels(data_single_parallel$experiment)
+levels(data_single_parallel$speech_version)
+
+# check number of participants on each experiment and speech version
+data_single_parallel %>% group_by(experiment, speech_version) %>% distinct(p_n_unique) %>% count() # ok
+```
+
+##### Model
+
+* Word-segmentation by experiment and speech version. We have data for each language on both the single and the joint task.
+
+```{r ws model parallel vs single experiments}
+# Balanced 
+mod_joint_ws_balanced <- 
+  data_single_parallel %>% 
+  filter(speech_version == "Balanced",
+         trial_type == "test ws") %>%
+  lme4::glmer(is_correct ~ experiment + (experiment|p_n_unique),
+              data = .,
+              family = "binomial")
+
+summary(mod_joint_ws_balanced)
+sjPlot::tab_model(mod_joint_ws_balanced,
+                  show.p = F,
+                  title = "Speech segmentation - Balanced: single vs. parallel task")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_balanced_joint.doc"))
+
+# Aligned
+mod_joint_ws_aligned <- 
+  data_single_parallel %>% 
+  filter(speech_version == "Aligned",
+         trial_type == "test ws") %>%
+  lme4::glmer(is_correct ~ experiment + (experiment|p_n_unique),
+              data = .,
+              family = "binomial")
+
+summary(mod_joint_ws_aligned)
+sjPlot::tab_model(mod_joint_ws_aligned,
+                  show.p = F,
+                  title = "Speech segmentation - Aligned: single vs. parallel task")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_aligned_joint.doc"))
+
+# Conflict - CONVERGENCE WARNING
+mod_joint_ws_conflict <- 
+  data_single_parallel %>% 
+  filter(experiment %in% c("ws only", "ws + cswl joint"), 
+         speech_version == "Conflict",
+         trial_type == "test ws") %>%
+  lme4::glmer(is_correct ~ experiment + (experiment|p_n_unique), # convergence warning, but results don't change: keeping both instead of only participant
+              data = .,
+              family = "binomial")
+
+summary(mod_joint_ws_conflict)
+sjPlot::tab_model(mod_joint_ws_conflict,
+                  show.p = F,
+                  title = "Speech segmentation - Conflict: single vs. parallel task")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_conflict_joint.doc"))
+
+# combined table
+sjPlot::tab_model(mod_joint_ws_balanced, mod_joint_ws_aligned, mod_joint_ws_conflict,
+                  show.p = F,
+                  title = "Speech segmentation - single vs. parallel task: \n Balanced, Aligned, Conflict; 
+                  [selection ~ experiment + (experiment|p_n_unique)]")#, 
+                  #file = here("03_output_graphics/mod_freq_ws_joint_tab.doc"))
+
+```
+
+* Cross-situational word learning by experiment and speech version. We have data for each language on the joint task. These will be compared to a baseline of cswl only.
+
+```{r cswl model parallel vs single experiments}
+# CSWL
+# experiment + speech are combined in a single variable
+mod_joint_cswl <- 
+  data_single_parallel %>% 
+  filter(experiment %in% c("cswl only", "ws + cswl joint"), 
+         trial_type == "test cswl") %>%
+  lme4::glmer(is_correct ~ speech_version + (experiment|p_n_unique), 
+              data = .,
+              family = "binomial")
+
+summary(mod_joint_cswl)
+sjPlot::tab_model(mod_joint_cswl,
+                  show.p = F,
+                  title = "Cross-situational word learning: single (intercept) vs. parallel task (Balanced, Aligned, Conflict; [selection ~ experiment:speech version + (experiment|p_n_unique)]")#, 
+                  #file = here("03_output_graphics/mod_freq_cswl_joint.doc"))
+```
+
 # THE END
