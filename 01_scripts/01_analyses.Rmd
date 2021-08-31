@@ -1218,7 +1218,7 @@ mod_joint_cswl <-
   data_single_parallel %>% 
   filter(experiment %in% c("cswl only", "ws + cswl joint"), 
          trial_type == "test cswl") %>%
-  lme4::glmer(is_correct ~ speech_version + (experiment|p_n_unique), 
+  lme4::glmer(is_correct ~ speech_version + (speech_version|p_n_unique), 
               data = .,
               family = "binomial")
 
