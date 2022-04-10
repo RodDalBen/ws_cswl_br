@@ -42,4 +42,6 @@ vignettes/*.pdf
 .Renviron
 
 # Extra folder for binding tidy data from different experiment
-00_extra_ignore
+01_scripts/extra_old.Rmd
+
+# END
