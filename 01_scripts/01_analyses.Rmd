@@ -1,11 +1,11 @@
 ---
 title: "Data analyses for: <Putting statistics together: the interplay of transitional, cross-situational, and phonotactic probabilities>"
 author: "Rodrigo Dal Ben"
-date: "25/03/2021"
+date: "March 25, 2021"
 output: html_document
 ---
 
-Last update: 08 April 2022
+Last update: April 09, 2022
 
 ***
 
@@ -74,9 +74,15 @@ rm(installed_pkgs, pkgs, use_groundhog)
 
 # avoid scientific notation
 options(scipen = 0)
+```
 
-# color-blind palette
-cb_pal <- c("#E69F00", "#009E73", "#0072B2", "#D55E00", "#999999", "#000000") 
+# User preferences
+
+Decide if you want to save figures and tables or just inspect them in R. 
+
+```{r switch output}
+# set to TRUE to save 
+save_output = F 
 ```
 
 # Prepare data
@@ -444,9 +450,12 @@ plot_joint_seg_exp1 <-
   plot_perf_seg_exp1 / plot_corr_seg_eval_exp1 + 
   plot_annotation(title = "Experiment 1", tag_levels = "A")
 
-#ggsave(plot = plot_joint_seg_exp1, 
-#       filename = here("03_output_graphics", "plot_joint_seg_exp1.png"),
-#       width = 14, height = 14, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_joint_seg_exp1, 
+         filename = here("03_output_graphics", "plot_joint_seg_exp1.png"),
+         width = 14, height = 14, units = "cm", dpi = 300)
+}
 ```
 
 * Joint vs. single task: Here we use data from other experiments with a single task.
@@ -473,9 +482,12 @@ plot_ws_only <-
 
 plot_ws_only
 
-#ggsave(plot = plot_ws_only, 
-#       filename = here("03_output_graphics/plot_ws_only_comparison.png"),
-#       width = 12, height = 8, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_ws_only, 
+         filename = here("03_output_graphics", "plot_ws_only_comparison.png"),
+         width = 12, height = 8, units = "cm", dpi = 300)
+}
 ```
 
 ### Experiment 1: Cross-situational word learning
@@ -508,10 +520,6 @@ plot_perf_map_freq_exp1 <-
 
 plot_perf_map_freq_exp1
 
-#ggsave(plot = plot_perf_map_freq_exp1, 
-#       filename = here("03_output_graphics", "plot_map_freq_experiment1.png"),
-#       width = 12, height = 8, units = "cm", dpi = 300)
-
 # experiment 1: mapping and self evaluation
 plot_corr_map_eval_exp1 <- 
   data_summ_correlation %>%
@@ -535,9 +543,12 @@ plot_joint_map_exp1 <-
   plot_perf_map_freq_exp1 / plot_corr_map_eval_exp1 + 
   plot_annotation(title = "Experiment 1", tag_levels = "A")
 
-#ggsave(plot = plot_joint_map_exp1, 
-#       filename = here("03_output_graphics", "plot_joint_map_exp1.png"),
-#       width = 14, height = 14, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_joint_map_exp1, 
+         filename = here("03_output_graphics", "plot_joint_map_exp1.png"),
+         width = 14, height = 14, units = "cm", dpi = 300)
+}
 ```
 
 * Joint vs. single task
@@ -568,9 +579,12 @@ plot_cswl_only <-
 
 plot_cswl_only
 
-#ggsave(plot = plot_cswl_only, 
-#       filename = here("03_output_graphics/plot_cswl_only_comparison.png"),
-#       width = 12, height = 8, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_cswl_only, 
+         filename = here("03_output_graphics", "plot_cswl_only_comparison.png"),
+         width = 12, height = 8, units = "cm", dpi = 300)
+}
 ```
 
 ### Experiment 1: correlation speech segmentation and cross-situational word learning
@@ -593,9 +607,12 @@ plot_corr_seg_map_exp1 <-
 
 plot_corr_seg_map_exp1
 
-#ggsave(plot = plot_corr_seg_map_exp1, 
-#       filename = here("03_output_graphics", "plot_corr_seg_map_exp1.png"),
-#       width = 14, height = 6, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_corr_seg_map_exp1, 
+         filename = here("03_output_graphics", "plot_corr_seg_map_exp1.png"),
+         width = 14, height = 6, units = "cm", dpi = 300)
+}
 ```
 
 ### Experiment 2: Speech Segmentation
@@ -653,9 +670,12 @@ plot_joint_seg_exp2 <-
   plot_perf_seg_exp2 + plot_corr_seg_eval_exp2 + 
   plot_annotation(title = "Experiment 2", tag_levels = "A")
 
-#ggsave(plot = plot_joint_seg_exp2, 
-#       filename = here("03_output_graphics", "plot_joint_seg_exp2.png"),
-#       width = 14, height = 10, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_joint_seg_exp2, 
+         filename = here("03_output_graphics", "plot_joint_seg_exp2.png"),
+         width = 14, height = 10, units = "cm", dpi = 300)
+}
 ```
 
 ### Experiment 2: Mapping
@@ -686,10 +706,6 @@ plot_map_freq_exp2 <-
 
 plot_map_freq_exp2
 
-#ggsave(plot = plot_map_freq_exp2, 
-#       filename = here("03_output_graphics/plot_map_freq_experiment2.png"),
-#       width = 10, height = 8, units = "cm", dpi = 300)
-
 # experiment 2: mapping and self evaluation
 plot_corr_map_eval_exp2 <- 
   data_summ_correlation %>%
@@ -715,9 +731,12 @@ plot_joint_map_exp2 <-
   plot_map_freq_exp2 + plot_corr_map_eval_exp2 + 
   plot_annotation(title = "Experiment 2", tag_levels = "A")
 
-#ggsave(plot = plot_joint_map_exp2, 
-#       filename = here("03_output_graphics", "plot_joint_map_exp2.png"),
-#       width = 14, height = 8, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_joint_map_exp2, 
+         filename = here("03_output_graphics", "plot_joint_map_exp2.png"),
+         width = 14, height = 8, units = "cm", dpi = 300)
+}
 ```
 
 ### Experiment 2: correlation speech segmentation and cross-situational word learning
@@ -738,9 +757,12 @@ plot_corr_seg_map_exp2 <-
 
 plot_corr_seg_map_exp2
 
-#ggsave(plot = plot_corr_seg_map_exp2, 
-#       filename = here("03_output_graphics", "plot_corr_seg_map_exp2.png"),
-#       width = 10, height = 8, units = "cm", dpi = 300)
+# save or not
+if(save_output == T){
+  ggsave(plot = plot_corr_seg_map_exp2, 
+         filename = here("03_output_graphics", "plot_corr_seg_map_exp2.png"),
+         width = 10, height = 8, units = "cm", dpi = 300)
+}
 ```
 
 # Statistics
@@ -816,8 +838,15 @@ mod_freq_ws_experiment1 <-
 summary(mod_freq_ws_experiment1)
 sjPlot::tab_model(mod_freq_ws_experiment1,
                   show.p = F,
-                  title = "Frequentist, Experiment 1 - Segmentation")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_exp1.doc"))
+                  title = "Frequentist, Experiment 1 - Segmentation")
+
+# save or not
+if(save_output == T){
+sjPlot::tab_model(mod_freq_ws_experiment1,
+                  show.p = F,
+                  title = "Frequentist, Experiment 1 - Segmentation", 
+                  file = here("03_output_graphics", "mod_freq_ws_exp1.doc"))
+}
 ```
 
 **Experiment 2**
@@ -838,8 +867,15 @@ mod_freq_ws_experiment2 <-
 summary(mod_freq_ws_experiment2)
 sjPlot::tab_model(mod_freq_ws_experiment2,
                   show.p = F,
-                  title = "Frequentist, Experiment 2 - Segmentation")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_exp2.doc"))
+                  title = "Frequentist, Experiment 2 - Segmentation")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_freq_ws_experiment2,
+                  show.p = F,
+                  title = "Frequentist, Experiment 2 - Segmentation", 
+                  file = here("03_output_graphics", "mod_freq_ws_exp2.doc"))
+}
 ```
 
 #### Cross-situational word learning
@@ -860,8 +896,15 @@ mod_freq_cswl_experiment1 <-
 summary(mod_freq_cswl_experiment1)
 sjPlot::tab_model(mod_freq_cswl_experiment1,
                   show.p = F,
-                  title = "Frequentist, Experiment 1 - Mapping")#, 
-                  #file = here("03_output_graphics/mod_freq_map_exp1.doc"))
+                  title = "Frequentist, Experiment 1 - Mapping")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_freq_cswl_experiment1,
+                  show.p = F,
+                  title = "Frequentist, Experiment 1 - Mapping", 
+                  file = here("03_output_graphics", "mod_freq_map_exp1.doc"))
+}
 
 # inspection plots
 data_filtered_v2 %>% 
@@ -889,9 +932,15 @@ mod_freq_cswl_experiment2 <-
 summary(mod_freq_cswl_experiment2)
 sjPlot::tab_model(mod_freq_cswl_experiment2,
                   show.p = F,
-                  title = "Frequentist, Experiment 2 - Mapping")#, 
-                  #file = here("03_output_graphics/mod_freq_map_exp2.doc"))
+                  title = "Frequentist, Experiment 2 - Mapping")
 
+# save or not
+if(save_output == T){
+sjPlot::tab_model(mod_freq_cswl_experiment2,
+                  show.p = F,
+                  title = "Frequentist, Experiment 2 - Mapping", 
+                  file = here("03_output_graphics", "mod_freq_map_exp2.doc"))
+}
 
 # plots to confirm the distribution of responses
 ## histogram
@@ -911,7 +960,6 @@ data_filtered_v2 %>%
   geom_violin(position = position_dodge(0.85), alpha = 0.6, size = 0.3) +
   geom_point(position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.85), alpha = 0.3) +
   stat_summary(fun.data = "mean_cl_boot", position = position_dodge(width = 0.85)) + # boot CIs
-  scale_fill_manual(values = cb_pal[4:5], name = "Frequency", labels = c("High", "Low")) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
   scale_x_discrete(labels = "Conflict") +
@@ -1054,8 +1102,15 @@ mod_joint_ws_balanced <-
 summary(mod_joint_ws_balanced)
 sjPlot::tab_model(mod_joint_ws_balanced,
                   show.p = F,
-                  title = "Speech segmentation - Balanced: single vs. parallel task")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_balanced_joint.doc"))
+                  title = "Speech segmentation - Balanced: single vs. parallel task")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_joint_ws_balanced,
+                  show.p = F,
+                  title = "Speech segmentation - Balanced: single vs. parallel task", 
+                  file = here("03_output_graphics", "mod_freq_ws_balanced_joint.doc"))
+}
 
 # Aligned
 mod_joint_ws_aligned <- 
@@ -1069,8 +1124,15 @@ mod_joint_ws_aligned <-
 summary(mod_joint_ws_aligned)
 sjPlot::tab_model(mod_joint_ws_aligned,
                   show.p = F,
-                  title = "Speech segmentation - Aligned: single vs. parallel task")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_aligned_joint.doc"))
+                  title = "Speech segmentation - Aligned: single vs. parallel task")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_joint_ws_aligned,
+                  show.p = F,
+                  title = "Speech segmentation - Aligned: single vs. parallel task", 
+                  file = here("03_output_graphics", "mod_freq_ws_aligned_joint.doc"))
+}
 
 # Conflict - CONVERGENCE WARNING
 mod_joint_ws_conflict <- 
@@ -1085,16 +1147,30 @@ mod_joint_ws_conflict <-
 summary(mod_joint_ws_conflict)
 sjPlot::tab_model(mod_joint_ws_conflict,
                   show.p = F,
-                  title = "Speech segmentation - Conflict: single vs. parallel task")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_conflict_joint.doc"))
+                  title = "Speech segmentation - Conflict: single vs. parallel task")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_joint_ws_conflict,
+                  show.p = F,
+                  title = "Speech segmentation - Conflict: single vs. parallel task", 
+                  file = here("03_output_graphics", "mod_freq_ws_conflict_joint.doc"))
+}
 
 # combined table
 sjPlot::tab_model(mod_joint_ws_balanced, mod_joint_ws_aligned, mod_joint_ws_conflict,
                   show.p = F,
                   title = "Speech segmentation - single vs. parallel task: \n Balanced, Aligned, Conflict; 
-                  [selection ~ experiment + (experiment|p_n_unique)]")#, 
-                  #file = here("03_output_graphics/mod_freq_ws_joint_tab.doc"))
+                  [selection ~ experiment + (experiment|p_n_unique)]")
 
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_joint_ws_balanced, mod_joint_ws_aligned, mod_joint_ws_conflict,
+                  show.p = F,
+                  title = "Speech segmentation - single vs. parallel task: \n Balanced, Aligned, Conflict; 
+                  [selection ~ experiment + (experiment|p_n_unique)]", 
+                  file = here("03_output_graphics", "mod_freq_ws_joint_tab.doc"))
+}
 ```
 
 * Cross-situational word learning by experiment and speech version. We have data for each language on the joint task. These will be compared to a baseline of cswl only.
@@ -1113,8 +1189,16 @@ mod_joint_cswl <-
 summary(mod_joint_cswl)
 sjPlot::tab_model(mod_joint_cswl,
                   show.p = F,
-                  title = "Cross-situational word learning: single (intercept) vs. parallel task (Balanced, Aligned, Conflict; [selection ~ experiment:speech version + (experiment|p_n_unique)]")#, 
-                  #file = here("03_output_graphics/mod_freq_cswl_joint.doc"))
+                  title = "Cross-situational word learning: single (intercept) vs. parallel task (Balanced, Aligned, Conflict; [selection ~ experiment:speech version + (experiment|p_n_unique)]")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_joint_cswl,
+                  show.p = F,
+                  title = "Cross-situational word learning: single (intercept) vs. parallel task (Balanced, Aligned, Conflict; [selection ~ experiment:speech version + (experiment|p_n_unique)]", 
+                  file = here("03_output_graphics", "mod_freq_cswl_joint.doc"))
+}
+
 ```
 
 # THE END
