@@ -49,4 +49,4 @@ po/*~
 rsconnect/
 
 # Folder with extra code
-*extra_old.Rmd
+/01_scripts/extra_old.Rmd
