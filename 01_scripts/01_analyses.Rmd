@@ -5,7 +5,7 @@ date: "March 25, 2021"
 output: html_document
 ---
 
-Last update: April 09, 2022
+Last update: April 10, 2022
 
 ***
 
@@ -31,6 +31,15 @@ The script has the following structure:
 6. Inferential statistics
 
 ***
+
+# User preferences
+
+Decide if you want to save figures and tables or just inspect them in R. 
+
+```{r switch output}
+# set to TRUE to save 
+save_output = F
+```
 
 # Load packages
 
@@ -74,15 +83,6 @@ rm(installed_pkgs, pkgs, use_groundhog)
 
 # avoid scientific notation
 options(scipen = 0)
-```
-
-# User preferences
-
-Decide if you want to save figures and tables or just inspect them in R. 
-
-```{r switch output}
-# set to TRUE to save 
-save_output = F 
 ```
 
 # Prepare data
@@ -328,8 +328,11 @@ data_summ_plot_freq <-
   mutate(speech_version_label = case_when(speech_version == "L_balanced" ~ "Balanced", 
                                           speech_version == "L_aligned" ~ "Aligned", 
                                           speech_version == "L_conflict" ~ "Conflict"),
-         speech_version_label = factor(speech_version_label, levels = c("Balanced", "Aligned", "Conflict"))) 
+         speech_version_label = factor(speech_version_label, levels = c("Balanced", "Aligned", "Conflict")),
+         freq_pair = factor(freq_pair, levels = c("low", "high"))) 
   
+levels(data_summ_plot_freq$freq_pair)
+
 data_summ_plot_freq
 
 ## auditory type experiment 2
@@ -512,7 +515,7 @@ plot_perf_map_freq_exp1 <-
   #             stackdir = "down") +
   annotate("segment", x = -Inf, xend = Inf, y = 0.25, yend = 0.25, linetype = "dashed", alpha = 0.6) + # chance level cswl
   facet_wrap(~ speech_version_label) +
-  scale_x_discrete(labels = c("High", "Low")) +
+  scale_x_discrete(labels = c("Low", "High")) +
   labs(title = "Mapping by frequency", 
        y = "Object selection",
        x = "Pair frequency") + 
@@ -697,7 +700,7 @@ plot_map_freq_exp2 <-
                dotsize = 0.5, 
                alpha = 0.2, 
                stackdir = "down") +
-  scale_x_discrete(labels = c("High", "Low")) +
+  scale_x_discrete(labels = c("Low", "High")) +
   annotate("segment", x = -Inf, xend = Inf, y = 0.25, yend = 0.25, linetype = "dashed", alpha = 0.6) + # chance level cswl
   labs(title = "Mapping by \npair frequency", 
        y = "Object selection", 
@@ -887,7 +890,8 @@ if(save_output == T){
 mod_freq_cswl_experiment1 <-
   data_filtered_v2 %>% 
   filter(experiment == 1,
-         trial_type == "test cswl") %>% 
+         trial_type == "test cswl") %>%
+  mutate(freq_pair = factor(freq_pair, levels = c("low", "high"))) %>% 
   glmer(is_correct ~ logit(chance_level) + speech_version*freq_pair + (1|target_visual) + (1|p_n_unique),
         family = "binomial",
         data = .
