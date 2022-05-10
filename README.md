@@ -16,7 +16,7 @@ Last update: May 09, 2022
 
 * `01_scripts`: this folder contains a Rmd commented script that contains all analyses and generate all figures.
 
-* `02_data`: this folder contains three datasets (`.csv` and `.rda`). One with data from the current experiment, one with data from [Dal Ben et al. (2021)](), and another with data from [Dal Ben et al. (2022)]().
+* `02_data`: this folder contains three datasets (`.csv` and `.rda`). One with data from the current experiment, one with data from [Dal Ben et al. (2021)](https://osf.io/s9thk/), and another with data from [Dal Ben et al. (2022)](https://osf.io/6fqzg/).
 
 * `03_output_graphics`: this folder contains output for all statistical analyses (e.g., regression tables) and all visualizations. 
 
