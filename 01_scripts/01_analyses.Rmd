@@ -5,7 +5,7 @@ date: "March 25, 2021"
 output: html_document
 ---
 
-Last update: May 04, 2022
+Last update: May 09, 2022
 
 ***
 
@@ -17,7 +17,7 @@ Data analyses script containing descriptive and inferential statistics, as well 
 
 **GitHub:** [repository](https://github.com/RodDalBen/ws_cswl_br)
 
-**Doubts & suggestions:** <dalbenwork@gmail.com>
+**Feedback & suggestions:** <dalbenwork@gmail.com>
 
 ***
 
@@ -49,18 +49,24 @@ To increase the chances of reproducibility, we load packages through the `ground
 # change to TRUE to use groundhog
 use_groundhog <- FALSE 
 
+# developer session info
+# R version 4.1.2 (2021-11-01)
+# Platform: aarch64-apple-darwin20 (64-bit)
+# Running under: macOS Monterey 12.2.1
+
 # list of packages w/ version
-pkgs <- c("here",
-          "tidyverse",
-          "boot", 
-          "gmodels", 
-          "lme4", 
-          "sjPlot", 
-          "patchwork", 
-          "janitor", 
-          "RColorBrewer",
-          "tidylog",
-          "ggdist")
+pkgs <- c("here", # v1.0.1
+          "tidyverse", # v1.3.1
+          "boot", # v1.3-28
+          "gmodels", # v2.18.1
+          "lme4", # v.1-28
+          "sjPlot", # v2.8.10
+          "patchwork", # v1.1.1
+          "janitor", # v2.1.0
+          "RColorBrewer", # v1.1-2
+          "tidylog", # v1.0.2
+          "ggdist" # v3.1.1
+          )
 
 if(use_groundhog == TRUE){
 # groundhog

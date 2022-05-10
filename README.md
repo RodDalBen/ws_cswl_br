@@ -1,9 +1,25 @@
-# WS and CSWL in parallel - Brazilians
+**Repository Specifications**
 
-A study combining word segmentation (ws), cross-situational word learning (cswl), and phonotactics in parallel. The study was performed with Brazilian adults (both in person and online). For a full acount see the following reference.
+Author: Rodrigo Dal Ben
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in pareallel. *Journal ...* [*PsyArXiv preprint*](ADD)
+Last update: May 09, 2022
 
-[**OSF project**](ADD)
+**Article:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in parallel. *Journal ...* [*PsyArXiv preprint*](ADD)
 
-**Doubts & suggestions:** <dalbenwork@gmail.com>
+**OSF project**: [link]()
+
+**Summary**: In this project we explored whether adults, native speakers of Brazilian-Portuguese, could track co-occurrence between syllables (transitional probabilities), syllables' positional probabilities (phonotactics), and co-occurrences between words and objects to find words in continuous speech and map them to objects simultaneously.
+
+**Reproducibility**: You can run all the code using the `groundhog` package that enhances the chances of reproducibility. Moreover, all packages' versions and R version are noted in the script.
+
+**Directory structure**: This repository is organized into four subdirectories: 
+
+* `01_scripts`: this folder contains a Rmd commented script that contains all analyses and generate all figures.
+
+* `02_data`: this folder contains three datasets (`.csv` and `.rda`). One with data from the current experiment, one with data from [Dal Ben et al. (2021)](), and another with data from [Dal Ben et al. (2022)]().
+
+* `03_output_graphics`: this folder contains output for all statistical analyses (e.g., regression tables) and all visualizations. 
+
+* `04_materials`: this folder contains the audio stimuli, with a table that organizes it into separate languages. It contains visual stimuli (from the [NOUN database](http://www.sussex.ac.uk/wordlab/noun)). It also contains a sample video showing how audio and visual stimuli were presented during the experiment.
+
+**Feedback & suggestions:** <dalbenwork@gmail.com>
