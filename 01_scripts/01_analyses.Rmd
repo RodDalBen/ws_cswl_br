@@ -879,11 +879,31 @@ data_summ_plot_audio_type %>%
   summarise(avg = mean(avg_resp, na.rm = T),
             sd = sd(avg_resp, na.rm = T))
 
-# Experient 1 & 2 - mapping (high, low)
+# Experiment 1 & 2 - mapping (high, low)
 data_summ_plot_freq %>% 
   group_by(experiment, speech_version, freq_pair) %>% 
   summarise(avg = mean(avg_resp, na.rm = T),
             sd = sd(avg_resp, na.rm = T))
+
+# Experiment 1 & 2 - mapping overall
+data_summ_plot_freq %>% 
+  group_by(experiment, speech_version) %>% 
+  summarise(avg = mean(avg_resp, na.rm = T),
+            sd = sd(avg_resp, na.rm = T))
+
+# Previous studies
+## Speech segmentation only
+data_summ_plot_ws_only %>% 
+  group_by(speech_version) %>% 
+  summarise(avg = mean(avg_resp, na.rm = T),
+            sd = sd(avg_resp, na.rm = T))
+  
+## Cross-situational word learning only
+data_summ_plot_cswl_only %>% 
+  ungroup() %>% 
+  summarise(avg = mean(avg_resp, na.rm = T),
+            sd = sd(avg_resp, na.rm = T))
+
 ```
 
 ## Inferential

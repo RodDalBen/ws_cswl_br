@@ -2,11 +2,11 @@
 
 Author: Rodrigo Dal Ben
 
-Last update: May 09, 2022
+Last update: July 18, 2022
 
-**Article:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). All together now: Word segmentation, cross-situational word learning and phonotactics in parallel. *Journal ...* [*PsyArXiv preprint*](ADD)
+**Article:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). Speech segmentation and Cross-situational word learning in parallel: An exploratory study. *Journal ...* [*PsyArXiv preprint*](ADD)
 
-**OSF project**: [link]()
+**OSF project**: [link](https://osf.io/rs2bm/)
 
 **Summary**: In this project we explored whether adults, native speakers of Brazilian-Portuguese, could track co-occurrence between syllables (transitional probabilities), syllables' positional probabilities (phonotactics), and co-occurrences between words and objects to find words in continuous speech and map them to objects simultaneously.
 
