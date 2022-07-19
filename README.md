@@ -2,7 +2,7 @@
 
 Author: Rodrigo Dal Ben
 
-Last update: July 18, 2022
+Last update: July 19, 2022
 
 **Article:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (in press). Speech segmentation and Cross-situational word learning in parallel: An exploratory study. *Journal ...* [*PsyArXiv preprint*](ADD)
 

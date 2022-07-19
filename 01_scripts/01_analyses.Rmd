@@ -1,19 +1,19 @@
 ---
-title: "Data analyses for: Putting statistics together: the interplay of transitional, cross-situational, and phonotactic probabilities>"
+title: "Data analyses for: Speech segmentation and Cross-situational word learning in parallel: An exploratory study"
 author: "Rodrigo Dal Ben"
 date: "March 25, 2021"
 output: html_document
 ---
 
-Last update: May 09, 2022
+Last update: July 19, 2022
 
 ***
 
 Data analyses script containing descriptive and inferential statistics, as well as visualizations for:
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Putting statistics together: the interplay of transitional, cross-situational, and phonotactic probabilities *Journal ...* [*PsyArXiv preprint*](ADD)
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Speech segmentation and Cross-situational word learning in parallel: An exploratory study. *Journal ...* [*PsyArXiv preprint*](ADD)
 
-**OSF:** [project](ADD)
+**OSF:** [project](https://osf.io/rs2bm/)
 
 **GitHub:** [repository](https://github.com/RodDalBen/ws_cswl_br)
 
@@ -629,10 +629,11 @@ if(save_output == T){
 ### Experiment 1: correlation speech segmentation and cross-situational word learning
 
 ```{r exp1 correlation plot seg map}
+# overall stats
 plot_corr_seg_map_exp1 <- 
   data_summ_correlation %>%
   filter(experiment == 1) %>% 
-  mutate(label = case_when(speech_version_label == "Balanced" ~ "italic(r[s])~`=`~0.49",
+  mutate(label = case_when(speech_version_label == "Balanced" ~ "italic(r[s])~`=`~0.49", # calculate on line 1115
                          speech_version_label == "Aligned" ~ "italic(r[s])~`=`~0.52",
                          speech_version_label == "Conflict" ~ "italic(r[s])~`=`~0.42")) %>% 
   ggplot(aes(y = `test ws`, x = `test cswl`)) +
@@ -646,7 +647,7 @@ plot_corr_seg_map_exp1 <-
           color = "darkgrey") +
   coord_cartesian(ylim = c(0, 1), xlim = c(0,1)) +
   scale_size_area() +
-  labs(title = "Experiment 1\nCorrelation between segmentation and mapping",
+  labs(title = "By Language",
        y = "Word selection", x = "Object selection") + 
   theme_classic(base_size = 10) +
   theme(legend.title.align = 0.5,
@@ -654,11 +655,45 @@ plot_corr_seg_map_exp1 <-
 
 plot_corr_seg_map_exp1
 
+# median split for Conflict Language
+plot_corr_seg_map_conflict_median_split_exp1 <- 
+  data_summ_correlation %>%
+  filter(experiment == 1,
+         speech_version_label == "Conflict") %>% 
+  ungroup() %>% 
+  mutate(median_split_ws = case_when(`test ws` > median(`test ws`) ~ "Above Median",
+                                     TRUE ~ "Below Median"), 
+    label = case_when(median_split_ws == "Above Median" ~ "italic(r[s])~`=`~0.45", # calculate on line 1129
+                      median_split_ws == "Below Median" ~ "italic(r[s])~`=`~0.003")) %>% 
+  ggplot(aes(y = `test ws`, x = `test cswl`)) +
+  geom_count(alpha = 0.2) +
+  geom_smooth(method = "lm", se = F, color = "black", alpha = 0.7, size = 0.5, fullrange = T) +
+  facet_wrap(~ median_split_ws) +
+  geom_text(mapping = aes(x = -Inf, y = -Inf, label = label),
+          parse = T,
+          hjust = -0.2, vjust = -1,
+          size = 2.5,
+          color = "darkgrey") +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0,1)) +
+  scale_size_area() +
+  labs(title = "Conflict Language by Median Split",
+       y = "Word selection", x = "Object selection") + 
+  theme_classic(base_size = 10) +
+  theme(legend.title.align = 0.5,
+        panel.spacing = unit(0.8, "lines"))
+
+plot_corr_seg_map_conflict_median_split_exp1
+
+# joint plot
+plot_joint_corr_seg_map_exp1 <- 
+  plot_corr_seg_map_exp1 / plot_corr_seg_map_conflict_median_split_exp1 + 
+  plot_annotation(title = "Experiment 1\nCorrelation between segmentation and mapping", tag_levels = "A")
+
 # save or not
 if(save_output == T){
-  ggsave(plot = plot_corr_seg_map_exp1, 
-         filename = here("03_output_graphics", "plot_corr_seg_map_exp1.png"),
-         width = 14, height = 6, units = "cm", dpi = 300)
+  ggsave(plot = plot_joint_corr_seg_map_exp1, 
+         filename = here("03_output_graphics", "plot_joint_corr_seg_map_exp1.png"),
+         width = 14, height = 14, units = "cm", dpi = 300)
 }
 ```
 
@@ -819,6 +854,7 @@ if(save_output == T){
 ### Experiment 2: correlation speech segmentation and cross-situational word learning
 
 ```{r exp2 correlation plot seg map}
+# overall
 plot_corr_seg_map_exp2 <- 
   data_summ_correlation %>%
   filter(experiment == 2) %>% 
@@ -834,18 +870,50 @@ plot_corr_seg_map_exp2 <-
            size = 2.5,
            color = "darkgrey"
            ) +
-  labs(title = "Experiment 2 - Correlation between \nsegmentation and mapping",
-       y = "Word selection", x = "Object selection") + 
+  labs(y = "Word selection", x = "Object selection") + 
   theme_classic(base_size = 10) +
   theme(legend.position = "none")
 
 plot_corr_seg_map_exp2
 
+# median split 
+plot_corr_seg_map_median_split_exp2 <- 
+  data_summ_correlation %>%
+  filter(experiment == 2) %>% 
+  ungroup() %>% 
+  mutate(median_split_ws = case_when(`test ws` > median(`test ws`) ~ "Above Median",
+                                     TRUE ~ "Below Median"), 
+         label = case_when(median_split_ws == "Above Median" ~ "italic(r[s])~`=`~0.05", # calculate on line 1129
+                           median_split_ws == "Below Median" ~ "italic(r[s])~`=`~0.11")) %>% 
+  ggplot(aes(y = `test ws`, x = `test cswl`)) +
+  geom_count(alpha = 0.2) +
+  geom_smooth(method = "lm", se = F, color = "black", alpha = 0.7, size = 0.5, fullrange = T) +
+  facet_wrap(~ median_split_ws) +
+  geom_text(mapping = aes(x = -Inf, y = -Inf, label = label),
+          parse = T,
+          hjust = -0.2, vjust = -1,
+          size = 2.5,
+          color = "darkgrey") +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0,1)) +
+  scale_size_area() +
+  labs(title = "By Median Split",
+       y = "Word selection", x = "Object selection") + 
+  theme_classic(base_size = 10) +
+  theme(legend.position = "none",
+        panel.spacing = unit(0.8, "lines"))
+
+plot_corr_seg_map_median_split_exp2
+
+# joint plot
+plot_joint_corr_seg_map_exp2 <- 
+  plot_corr_seg_map_exp2 / plot_corr_seg_map_median_split_exp2 + 
+  plot_annotation(title = "Experiment 2\nCorrelation between segmentation and mapping", tag_levels = "A")
+
 # save or not
 if(save_output == T){
-  ggsave(plot = plot_corr_seg_map_exp2, 
-         filename = here("03_output_graphics", "plot_corr_seg_map_exp2.png"),
-         width = 8, height = 8, units = "cm", dpi = 300)
+  ggsave(plot = plot_joint_corr_seg_map_exp2, 
+         filename = here("03_output_graphics", "plot_joint_corr_seg_map_exp2.png"),
+         width = 14, height = 14, units = "cm", dpi = 300)
 }
 ```
 
@@ -1081,8 +1149,27 @@ data_filtered_v2 %>%
 **WS and CSWL performance correlation**
 
 ```{r correlation ws cswl performance}
+# overall corr across both experiments
 data_summ_correlation %>% 
   group_by(experiment, speech_version) %>% 
+  summarise(cor(`test ws`, `test cswl`, method = "spearman"))
+
+# Conflict Language - Median split
+## calculate median and range
+data_summ_correlation %>% 
+  filter(speech_version == "L_conflict") %>% 
+  group_by(experiment) %>% 
+  summarise(median_ws = median(`test ws`),
+            iqr = IQR(`test ws`))
+  
+## Spearman by median split
+data_summ_correlation %>% 
+  filter(speech_version == "L_conflict") %>% 
+  group_by(experiment) %>% 
+  mutate(median_split = case_when(`test ws` > median(`test ws`) ~ "above",
+                               TRUE ~ "below")
+         ) %>% 
+  group_by(experiment, median_split) %>% 
   summarise(cor(`test ws`, `test cswl`, method = "spearman"))
 ```
 
