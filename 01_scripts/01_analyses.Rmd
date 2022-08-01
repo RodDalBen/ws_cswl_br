@@ -1,17 +1,17 @@
 ---
-title: "Data analyses for: Speech segmentation and Cross-situational word learning in parallel: An exploratory study"
+title: "Data analyses for: Speech segmentation and cross-situational word learning in parallel"
 author: "Rodrigo Dal Ben"
 date: "March 25, 2021"
 output: html_document
 ---
 
-Last update: July 19, 2022
+Last update: August 1, 2022
 
 ***
 
 Data analyses script containing descriptive and inferential statistics, as well as visualizations for:
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Speech segmentation and Cross-situational word learning in parallel: An exploratory study. *Journal ...* [*PsyArXiv preprint*](ADD)
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Speech segmentation and cross-situational word learning in parallel. *Under Review* [*PsyArXiv preprint*](ADD)
 
 **OSF:** [project](https://osf.io/rs2bm/)
 
