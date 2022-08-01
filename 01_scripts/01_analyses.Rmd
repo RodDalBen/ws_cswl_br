@@ -11,7 +11,7 @@ Last update: August 1, 2022
 
 Data analyses script containing descriptive and inferential statistics, as well as visualizations for:
 
-**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Speech segmentation and cross-situational word learning in parallel. *Under Review* [*PsyArXiv preprint*](ADD)
+**Reference:** Dal Ben R., Prequero I. T., Souza, D. H., & Hay, J. F. (under review). Speech segmentation and cross-situational word learning in parallel. *Under Review* [*PsyArXiv preprint*](https://psyarxiv.com/pf4nr/)
 
 **OSF:** [project](https://osf.io/rs2bm/)
 
