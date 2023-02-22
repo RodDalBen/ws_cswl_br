@@ -764,7 +764,7 @@ plot_perf_sti_type_seg_exp2 <-
   scale_fill_manual(values = c("darkgrey", "grey")) +
   scale_x_discrete(labels = c("Word","Part-word","Non-word")) +
   labs(x = "Stimuli type", 
-       y = "Average evaluation", 
+       y = "Accuracy", 
        title = "Evaluation by stimuli type") +
   theme_classic(base_size = 10) +
   theme(legend.position = "none")
