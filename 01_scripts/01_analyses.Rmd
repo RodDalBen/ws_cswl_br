@@ -489,7 +489,7 @@ if(save_output == T){
 }
 ```
 
-* Joint vs. single task: Here we use data from other experiments with a single task.
+#### Experiment 1: Joint vs. single task: Here we use data from other experiments with a single task.
 
 ```{r exp1 ws joint vs single task}
 plot_ws_only <- 
@@ -590,7 +590,7 @@ if(save_output == T){
 }
 ```
 
-* Joint vs. single task
+#### Experiment 1: Joint vs. single task
 
 ```{r exp1 cswl joint vs single task}
 plot_cswl_only <- 
@@ -626,7 +626,7 @@ if(save_output == T){
 }
 ```
 
-### Experiment 1: correlation speech segmentation and cross-situational word learning
+### Experiment 1: Correlation speech segmentation and cross-situational word learning
 
 ```{r exp1 correlation plot seg map}
 # overall stats
@@ -784,7 +784,7 @@ if(save_output == T){
 }
 ```
 
-### Experiment 2: Mapping
+### Experiment 2: Cross-situational word learning
 
 * Performance by pair frequency (300 or 150)
 * Self-evaluation
@@ -851,7 +851,7 @@ if(save_output == T){
 }
 ```
 
-### Experiment 2: correlation speech segmentation and cross-situational word learning
+### Experiment 2: Correlation speech segmentation and cross-situational word learning
 
 ```{r exp2 correlation plot seg map}
 # overall
@@ -1391,6 +1391,94 @@ if(save_output == T){
                   file = here("03_output_graphics", "mod_freq_cswl_joint.doc"))
 }
 
+```
+
+# Additional analysis: Potential effects of number of trials
+
+In Experiment 1, we tested each word (3) against each part-word (3) twice, for a total of 18 2-forced-choice trials. 
+In Experiment 2, we tested each word (3), part-word (3), and non-word (3), 6x, for a total of 53 go/no-go trials.
+
+Here we explore whether this ammount of exposure to part-words and non-words influence participants' performance on speech segmentation tests.
+
+```{r}
+# Experiment 1 
+mod_freq_ws_trials_exp1 <-
+  data_filtered_v2 %>% 
+  filter(experiment == 1,
+         trial_type == "test ws") %>% 
+  mutate(trial_number_mod = trial_number - 5) %>% # starting at 0
+  glmer(is_correct ~ logit(chance_level) + speech_version * trial_number + (1|target_audio_ws) + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+summary(mod_freq_ws_trials_exp1)
+sjPlot::tab_model(mod_freq_ws_trials_exp1,
+                  show.p = F,
+                  title = "Frequentist, Experiment 1 - Segmentation")
+
+# Experiment 2
+mod_freq_ws_trials_exp2 <-
+  data_filtered_v2 %>% 
+  filter(experiment == 2,
+         trial_type == "test ws") %>% 
+  mutate(trial_number_mod = trial_number - 5) %>% # starting at 0
+  glmer(is_correct ~ logit(chance_level) + trial_number + (1|target_audio_ws) + (1|p_n_unique),
+        family = "binomial",
+        data = .
+        )
+
+summary(mod_freq_ws_trials_exp2)
+sjPlot::tab_model(mod_freq_ws_trials_exp2,
+                  show.p = F,
+                  title = "Frequentist, Experiment 1 - Segmentation")
+```
+
+The analyses show that accuracy did not increased or descreased with trial number for both experiments. Visualization below. 
+
+```{r}
+# visualization
+## Experiment 1
+segmentation_acc_trial_exp1 <- 
+data_filtered_v2 %>% 
+  filter(experiment == 1,
+         trial_type == "test ws") %>% 
+  group_by(speech_version, trial_number) %>% 
+  summarise(acc = mean(is_correct)) %>% 
+  ggplot(aes(x = trial_number-4, y = acc)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~speech_version) +
+  labs(
+    title = "Experiment 1 - Speech segmentation, trial analysis",
+    x = "Trial number", 
+    y = "Accuracy") +
+  theme_bw()
+
+## Experiment 2
+segmentation_acc_trial_exp2 <- 
+data_filtered_v2 %>% 
+  filter(experiment == 2,
+         trial_type == "test ws") %>% 
+  group_by(trial_number) %>% 
+  summarise(acc = mean(is_correct)) %>% 
+  ggplot(aes(x = trial_number - 10, y = acc)) +
+  geom_point() +
+  geom_smooth() +
+  labs(
+    title = "Experiment 2 - Speech segmentation, trial analysis",
+    x = "Trial number", 
+    y = "Accuracy") +
+  theme_bw()
+
+# joint visualization
+plot_joint_segmentation_trials <- segmentation_acc_trial_exp1 / segmentation_acc_trial_exp2
+
+if(save_output == T){
+  ggsave(plot = plot_joint_segmentation_trials, 
+         filename = here("03_output_graphics", "plot_joint_segmentation_trials.png"),
+         width = 14, height = 14, units = "cm", dpi = 300)
+}
 ```
 
 # THE END
