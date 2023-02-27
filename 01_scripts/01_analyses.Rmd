@@ -1417,6 +1417,13 @@ sjPlot::tab_model(mod_freq_ws_trials_exp1,
                   show.p = F,
                   title = "Frequentist, Experiment 1 - Segmentation")
 
+if(save_output == T){
+  sjPlot::tab_model(mod_freq_ws_trials_exp1,
+                  show.p = F,
+                  title = "Experiment 1 - Speech segmentation as a fuction of speech version and trial number", 
+                  file = here("03_output_graphics", "mod_freq_ws_trials_exp1.doc"))
+}
+
 # Experiment 2
 mod_freq_ws_trials_exp2 <-
   data_filtered_v2 %>% 
@@ -1432,6 +1439,15 @@ summary(mod_freq_ws_trials_exp2)
 sjPlot::tab_model(mod_freq_ws_trials_exp2,
                   show.p = F,
                   title = "Frequentist, Experiment 1 - Segmentation")
+
+# save or not
+if(save_output == T){
+  sjPlot::tab_model(mod_freq_ws_trials_exp2,
+                  show.p = F,
+                  title = "Experiment 2 - Speech segmentation as a fuction of trial number", 
+                  file = here("03_output_graphics", "mod_freq_ws_trials_exp2.doc"))
+}
+
 ```
 
 The analyses show that accuracy did not increased or descreased with trial number for both experiments. Visualization below. 
